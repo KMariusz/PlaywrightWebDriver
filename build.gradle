@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+}
+
+ext {
+    // Dependency versions
+    set('lombokVersion', '1.18.38')
+    set('seleniumVersion', '4.10.0')
+    set('playwrightVersion', '1.52.0')
+    set('junitJupiterVersion', '5.9.2')
+}
+
+group = 'kmariusz.playwrightwebdriver'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Lombok
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    
+    // Selenium
+    implementation "org.seleniumhq.selenium:selenium-api:${seleniumVersion}"
+    implementation "org.seleniumhq.selenium:selenium-remote-driver:${seleniumVersion}"
+    implementation "org.seleniumhq.selenium:selenium-support:${seleniumVersion}"
+    
+    // Playwright
+    implementation "com.microsoft.playwright:playwright:${playwrightVersion}"
+    
+    // Test Dependencies
+    testImplementation platform("org.junit:junit-bom:${junitJupiterVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testImplementation 'org.junit.platform:junit-platform-suite-engine'
+}
+
+test {
+    useJUnitPlatform()
+}
