@@ -16,7 +16,6 @@ public class PracticeFormTest extends BaseTest {
         String lastName = "Doe";
         String email = "john.doe@example.com";
         String mobile = "1234567890";
-        String subject = "Computer Science";
         String currentAddress = "123 Test Street, Test City";
 
         PracticeFormPage practiceFormPage = new PracticeFormPage(driver);
@@ -24,7 +23,7 @@ public class PracticeFormTest extends BaseTest {
 
         // Fill and submit the form
         practiceFormPage.fillForm(firstName, lastName, email, mobile,
-                                 subject, currentAddress);
+                currentAddress);
         practiceFormPage.submitForm();
 
         // Verify form submission
