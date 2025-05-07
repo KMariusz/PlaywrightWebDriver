@@ -1,7 +1,6 @@
 package kmariusz.playwrightwebdriver;
 
 import com.microsoft.playwright.*;
-import kmariusz.playwrightwebdriver.BrowserTypes;
 import org.openqa.selenium.*;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import java.util.*;
