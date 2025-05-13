@@ -1,8 +1,15 @@
-package kmariusz.playwrightwebdriver;
+package io.github.kmariusz.playwrightwebdriver;
 
-import com.microsoft.playwright.*;
-import org.openqa.selenium.*;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
+import org.openqa.selenium.By;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.RemoteWebDriver;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,7 +29,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
         if (options == null) {
             options = new PlaywrightWebDriverOptions();
         }
-        
+
         this.playwright = Playwright.create();
         this.browser = createBrowser(options);
         this.context = browser.newContext(new Browser.NewContextOptions()
@@ -30,7 +37,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
                 .setIgnoreHTTPSErrors(options.isIgnoreHTTPSErrors()));
         this.page = context.newPage();
         this.currentWindowHandle = UUID.randomUUID().toString();
-        
+
         // Initialize window handles map with the initial page
         if (page != null && page.context() != null && page.context().browser() != null) {
             List<BrowserContext> contexts = page.context().browser().contexts();
@@ -138,15 +145,15 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
     public Object executeAsyncScript(String script, Object... args) {
         // Convert the script to a Promise-based function
         String wrappedScript = "(async () => {\n" +
-            "  const callback = arguments[arguments.length - 1];\n" +
-            "  try {\n" +
-            "    const result = " + script + ";\n" +
-            "    callback({status: 'success', result: await result});\n" +
-            "  } catch (e) {\n" +
-            "    callback({status: 'error', message: e.toString()});\n" +
-            "  }\n" +
-            "})();";
-        
+                "  const callback = arguments[arguments.length - 1];\n" +
+                "  try {\n" +
+                "    const result = " + script + ";\n" +
+                "    callback({status: 'success', result: await result});\n" +
+                "  } catch (e) {\n" +
+                "    callback({status: 'error', message: e.toString()});\n" +
+                "  }\n" +
+                "})();";
+
         // Execute the script with a timeout
         return page.evaluate(wrappedScript, args);
     }

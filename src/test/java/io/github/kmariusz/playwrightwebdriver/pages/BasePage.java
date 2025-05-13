@@ -1,4 +1,4 @@
-package kmariusz.playwrightwebdriver.pages;
+package io.github.kmariusz.playwrightwebdriver.pages;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;

@@ -14,7 +14,7 @@ ext {
     set('junitJupiterVersion', '5.9.2')
 }
 
-group = 'kmariusz.playwrightwebdriver'
+group = 'io.github.kmariusz.playwrightwebdriver'
 version = project.findProperty("releaseVersion") ?: project.ext.projectVersion
 
 repositories {
@@ -55,7 +55,7 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            groupId = 'kmariusz.playwrightwebdriver'
+            groupId = 'io.github.kmariusz.playwrightwebdriver'
             artifactId = 'playwright-webdriver'
             version = project.ext.projectVersion
         }

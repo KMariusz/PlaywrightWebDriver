@@ -1,4 +1,4 @@
-package kmariusz.playwrightwebdriver;
+package io.github.kmariusz.playwrightwebdriver;
 
 import org.openqa.selenium.By;
 
@@ -7,9 +7,9 @@ public class SelectorUtils {
         if (by == null) {
             throw new IllegalArgumentException("By selector cannot be null");
         }
-        
+
         String byString = by.toString();
-        
+
         try {
             if (byString.startsWith("By.id: ")) {
                 String id = byString.substring(7);
@@ -40,17 +40,17 @@ public class SelectorUtils {
             throw new IllegalArgumentException("Failed to convert By selector: " + byString, e);
         }
     }
-    
+
     private static String escapeCssSelector(String selector) {
         // Escape special CSS selector characters
         return selector.replaceAll("([\\[\\]\\^$*.|?+{}=!<>:()\\-])", "\\\\$1");
     }
-    
+
     private static String escapeTextSelector(String text) {
         // Escape single quotes in text selectors by doubling them
         return text.replace("'", "''");
     }
-    
+
     private static String escapeAttributeValue(String value) {
         // Escape single quotes in attribute values by doubling them
         return value.replace("'", "''");

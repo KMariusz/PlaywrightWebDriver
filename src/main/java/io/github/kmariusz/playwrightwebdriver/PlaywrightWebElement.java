@@ -1,5 +1,6 @@
-package kmariusz.playwrightwebdriver;
+package io.github.kmariusz.playwrightwebdriver;
 
+import com.microsoft.playwright.Locator;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
@@ -7,7 +8,6 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Coordinates;
 import org.openqa.selenium.remote.RemoteWebElement;
 
-import com.microsoft.playwright.Locator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -49,7 +49,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
     public String getAttribute(String name) {
         return locator.getAttribute(name);
     }
-    
+
     @Override
     public boolean isSelected() {
         return locator.isChecked();
@@ -111,10 +111,10 @@ public class PlaywrightWebElement extends RemoteWebElement {
             return new Rectangle(0, 0, 0, 0);
         }
         return new Rectangle(
-            (int) rect.x,
-            (int) rect.y,
-            (int) rect.width,
-            (int) rect.height
+                (int) rect.x,
+                (int) rect.y,
+                (int) rect.width,
+                (int) rect.height
         );
     }
 

@@ -30,7 +30,7 @@ Replace `LATEST_VERSION` with the latest release version from [GitHub Releases](
 
 ```xml
 <dependency>
-    <groupId>kmariusz.playwrightwebdriver</groupId>
+    <groupId>io.github.kmariusz.playwrightwebdriver</groupId>
     <artifactId>playwright-webdriver</artifactId>
     <version>LATEST_VERSION</version>
 </dependency>
@@ -43,7 +43,7 @@ Replace `LATEST_VERSION` with the latest release version from [GitHub Releases](
 
 ```groovy
 dependencies {
-    implementation 'kmariusz.playwrightwebdriver:playwright-webdriver:LATEST_VERSION'
+    implementation 'io.github.kmariusz.playwrightwebdriver:playwright-webdriver:LATEST_VERSION'
 }
 ```
 
@@ -52,9 +52,9 @@ dependencies {
 ### Basic Example
 
 ```java
-import kmariusz.playwrightwebdriver.PlaywrightWebDriver;
-import kmariusz.playwrightwebdriver.PlaywrightWebDriverOptions;
-import kmariusz.playwrightwebdriver.BrowserTypes;
+import io.github.kmariusz.playwrightwebdriver.PlaywrightWebDriver;
+import io.github.kmariusz.playwrightwebdriver.PlaywrightWebDriverOptions;
+import io.github.kmariusz.playwrightwebdriver.BrowserTypes;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 

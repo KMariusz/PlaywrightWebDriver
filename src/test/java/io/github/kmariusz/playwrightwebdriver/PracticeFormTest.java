@@ -1,12 +1,10 @@
-package kmariusz.playwrightwebdriver;
+package io.github.kmariusz.playwrightwebdriver;
 
-import kmariusz.playwrightwebdriver.pages.PracticeFormPage;
-import org.junit.jupiter.api.BeforeEach;
+import io.github.kmariusz.playwrightwebdriver.pages.PracticeFormPage;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.WebDriver;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PracticeFormTest extends BaseTest {
 
