@@ -1,8 +1,12 @@
 plugins {
     id 'java'
+    id 'maven-publish'
 }
 
 ext {
+    // Project version
+    set('projectVersion', '1.0-SNAPSHOT')
+
     // Dependency versions
     set('lombokVersion', '1.18.38')
     set('seleniumVersion', '4.10.0')
@@ -11,7 +15,7 @@ ext {
 }
 
 group = 'kmariusz.playwrightwebdriver'
-version = '1.0-SNAPSHOT'
+version = project.findProperty("releaseVersion") ?: project.ext.projectVersion
 
 repositories {
     mavenCentral()
@@ -41,4 +45,34 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+// Publishing configuration
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            groupId = 'kmariusz.playwrightwebdriver'
+            artifactId = 'playwright-webdriver'
+            version = project.ext.projectVersion
+        }
+    }
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/KMariusz/PlaywrightWebDriver")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("gpr.token") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+        maven {
+            name = "MavenCentral"
+            url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
+            credentials {
+                username = "token"
+                password = project.findProperty("ossrhToken") ?: System.getenv("OSSRH_TOKEN")
+            }
+        }
+    }
 }
