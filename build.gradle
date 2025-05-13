@@ -5,7 +5,7 @@ plugins {
 
 ext {
     // Project version
-    set('projectVersion', '1.0-SNAPSHOT')
+    set('projectVersion', '0.0.1')
 
     // Dependency versions
     set('lombokVersion', '1.18.38')
