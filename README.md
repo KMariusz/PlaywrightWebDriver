@@ -18,7 +18,6 @@ A WebDriver implementation using Microsoft Playwright for Java, providing a Sele
 ## Requirements
 
 - Java 11 or higher
-- Gradle
 - Playwright browsers installed (automatically handled by Playwright)
 
 ## Installation
