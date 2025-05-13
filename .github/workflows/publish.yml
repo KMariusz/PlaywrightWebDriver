@@ -39,5 +39,6 @@ jobs:
 
       - name: Publish to Maven Central
         env:
-          OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
         run: ./gradlew -PreleaseVersion=${{ github.event.release.tag_name }} publish --no-daemon
