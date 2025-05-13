@@ -44,14 +44,9 @@ dependencies {
 }
 
 test {
-    useJUnitPlatform()
-    enabled = false // Disable tests by default
-}
-
-// Enable tests only when explicitly invoked
-gradle.taskGraph.whenReady { taskGraph ->
-    if (taskGraph.hasTask(':test')) {
-        test.enabled = true
+    useJUnitPlatform {
+        def tags = project.findProperty("tags") ?: "none"
+        includeTags tags.split(",")
     }
 }
 

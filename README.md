@@ -18,30 +18,32 @@ A WebDriver implementation using Microsoft Playwright for Java, providing a Sele
 ## Requirements
 
 - Java 11 or higher
-- Maven or Gradle
+- Gradle
 - Playwright browsers installed (automatically handled by Playwright)
 
 ## Installation
 
 ### Maven
 
-Add the following dependency to your `pom.xml`:
+Add the following dependency to your `pom.xml`. 
+Replace `LATEST_VERSION` with the latest release version from [GitHub Releases](https://github.com/KMariusz/PlaywrightWebDriver/releases):
 
 ```xml
 <dependency>
     <groupId>kmariusz.playwrightwebdriver</groupId>
     <artifactId>playwright-webdriver</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>LATEST_VERSION</version>
 </dependency>
 ```
 
 ### Gradle
 
-Add the following to your `build.gradle`:
+Add the following to your `build.gradle`. 
+Replace `LATEST_VERSION` with the latest release version from [GitHub Releases](https://github.com/KMariusz/PlaywrightWebDriver/releases):
 
 ```groovy
 dependencies {
-    implementation 'kmariusz.playwrightwebdriver:playwright-webdriver:1.0-SNAPSHOT'
+    implementation 'kmariusz.playwrightwebdriver:playwright-webdriver:LATEST_VERSION'
 }
 ```
 
@@ -147,10 +149,7 @@ This project uses JUnit 5 for testing. To run the tests:
 
 ```bash
 # Using Gradle
-./gradlew test
-
-# Using Maven
-mvn test
+./gradlew test -Ptags=example
 ```
 
 ## Best Practices
@@ -167,7 +166,7 @@ mvn test
 If you encounter browser not found errors, make sure to install the required browsers using:
 
 ```bash
-mvn exec:java -e -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install"
+./gradlew playwrightInstall
 ```
 
 ### Debugging

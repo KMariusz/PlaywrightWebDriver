@@ -2,6 +2,7 @@ package kmariusz.playwrightwebdriver;
 
 import kmariusz.playwrightwebdriver.pages.PracticeFormPage;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.WebDriver;
 
@@ -10,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class PracticeFormTest extends BaseTest {
 
     @Test
+    @Tag("example")
     public void testPracticeFormSubmission() {
         // Test data
         String firstName = "John";
