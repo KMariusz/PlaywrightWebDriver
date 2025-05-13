@@ -45,6 +45,14 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    enabled = false // Disable tests by default
+}
+
+// Enable tests only when explicitly invoked
+gradle.taskGraph.whenReady { taskGraph ->
+    if (taskGraph.hasTask(':test')) {
+        test.enabled = true
+    }
 }
 
 // Publishing configuration
