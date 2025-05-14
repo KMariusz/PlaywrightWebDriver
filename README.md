@@ -1,6 +1,7 @@
 # Playwright WebDriver
 
-A WebDriver implementation using Microsoft Playwright for Java, providing a Selenium WebDriver-compatible API with Playwright's powerful automation capabilities.
+A WebDriver implementation using Microsoft Playwright for Java, providing a Selenium WebDriver-compatible API with
+Playwright's powerful automation capabilities.
 
 ## Features
 
@@ -9,9 +10,6 @@ A WebDriver implementation using Microsoft Playwright for Java, providing a Sele
 - Headless and headed modes
 - Automatic browser management
 - Screenshot support
-- Element location strategies
-- Form handling
-- Page Object Model (POM) support
 - Asynchronous JavaScript execution
 - Window and tab management
 
@@ -24,10 +22,12 @@ A WebDriver implementation using Microsoft Playwright for Java, providing a Sele
 
 ### Maven
 
-Add the following dependency to your `pom.xml`. 
-Replace `LATEST_VERSION` with the latest release version from [GitHub Releases](https://github.com/KMariusz/PlaywrightWebDriver/releases):
+Add the following dependency to your `pom.xml`.
+Replace `LATEST_VERSION` with the latest release version
+from [GitHub Releases](https://github.com/KMariusz/PlaywrightWebDriver/releases):
 
 ```xml
+
 <dependency>
     <groupId>io.github.kmariusz</groupId>
     <artifactId>playwrightwebdriver</artifactId>
@@ -37,8 +37,9 @@ Replace `LATEST_VERSION` with the latest release version from [GitHub Releases](
 
 ### Gradle
 
-Add the following to your `build.gradle`. 
-Replace `LATEST_VERSION` with the latest release version from [GitHub Releases](https://github.com/KMariusz/PlaywrightWebDriver/releases):
+Add the following to your `build.gradle`.
+Replace `LATEST_VERSION` with the latest release version
+from [GitHub Releases](https://github.com/KMariusz/PlaywrightWebDriver/releases):
 
 ```groovy
 dependencies {
@@ -61,66 +62,25 @@ public class ExampleTest {
     public static void main(String[] args) {
         // Create a new instance with default options (headless Chrome)
         PlaywrightWebDriver driver = new PlaywrightWebDriver();
-        
+
         try {
             // Navigate to a website
             driver.get("https://example.com");
-            
+
             // Find an element and interact with it
             WebElement element = driver.findElement(By.id("someId"));
             element.click();
-            
+
             // Take a screenshot
-            File screenshot = ((TakesScreenshot)driver).getScreenshotAs(OutputType.FILE);
-            
+            File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+
             // Execute JavaScript
             driver.executeScript("alert('Hello from Playwright WebDriver!');");
-            
+
         } finally {
             // Always close the driver to release resources
             driver.quit();
         }
-    }
-}
-```
-
-### Page Object Model Example
-
-```java
-// BasePage.java
-public abstract class BasePage {
-    protected WebDriver driver;
-    protected WebDriverWait wait;
-
-    public BasePage(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    }
-
-    public abstract void navigateTo();
-    
-    // Common page methods...
-}
-
-// LoginPage.java
-public class LoginPage extends BasePage {
-    private final By usernameField = By.id("username");
-    private final By passwordField = By.id("password");
-    private final By loginButton = By.id("login");
-    
-    public LoginPage(WebDriver driver) {
-        super(driver);
-    }
-    
-    @Override
-    public void navigateTo() {
-        driver.get("https://example.com/login");
-    }
-    
-    public void login(String username, String password) {
-        type(usernameField, username);
-        type(passwordField, password);
-        click(loginButton);
     }
 }
 ```
@@ -131,24 +91,15 @@ You can customize the WebDriver behavior using `PlaywrightWebDriverOptions`:
 
 ```java
 PlaywrightWebDriverOptions options = PlaywrightWebDriverOptions.builder()
-    .browserType(BrowserTypes.FIREFOX)  // Use Firefox
-    .headless(false)                    // Run in headed mode
-    .windowWidth(1920)                  // Set window width
-    .windowHeight(1080)                 // Set window height
-    .ignoreHTTPSErrors(true)            // Ignore HTTPS errors
-    .slowMo(100)                        // Slow down execution by 100ms
-    .build();
+        .browserType(BrowserTypes.FIREFOX)  // Use Firefox
+        .headless(false)                    // Run in headed mode
+        .windowWidth(1920)                  // Set window width
+        .windowHeight(1080)                 // Set window height
+        .ignoreHTTPSErrors(true)            // Ignore HTTPS errors
+        .slowMo(100)                        // Slow down execution by 100ms
+        .build();
 
 PlaywrightWebDriver driver = new PlaywrightWebDriver(options);
-```
-
-## Running Tests
-
-This project uses JUnit 5 for testing. To run the tests:
-
-```bash
-# Using Gradle
-./gradlew test -Ptags=example
 ```
 
 ## Best Practices
@@ -158,18 +109,6 @@ This project uses JUnit 5 for testing. To run the tests:
 3. **Resource Management**: Always call `driver.quit()` in a `finally` block to ensure resources are properly released.
 4. **Selectors**: Prefer using stable selectors like `data-testid` attributes for element location.
 5. **Configuration**: Use `PlaywrightWebDriverOptions` to configure browser settings instead of hardcoding them.
-
-## Troubleshooting
-
-### Browser Not Found
-If you encounter browser not found errors, make sure to install the required browsers using:
-
-```bash
-./gradlew playwrightInstall
-```
-
-### Debugging
-To debug tests, run the browser in headed mode and set `headless(false)` in the options.
 
 ## Contributing
 
