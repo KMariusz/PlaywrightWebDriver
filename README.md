@@ -29,8 +29,8 @@ Replace `LATEST_VERSION` with the latest release version from [GitHub Releases](
 
 ```xml
 <dependency>
-    <groupId>io.github.kmariusz.playwrightwebdriver</groupId>
-    <artifactId>playwright-webdriver</artifactId>
+    <groupId>io.github.kmariusz</groupId>
+    <artifactId>playwrightwebdriver</artifactId>
     <version>LATEST_VERSION</version>
 </dependency>
 ```
@@ -42,7 +42,7 @@ Replace `LATEST_VERSION` with the latest release version from [GitHub Releases](
 
 ```groovy
 dependencies {
-    implementation 'io.github.kmariusz.playwrightwebdriver:playwright-webdriver:LATEST_VERSION'
+    implementation 'io.github.kmariusz:playwrightwebdriver:LATEST_VERSION'
 }
 ```
 

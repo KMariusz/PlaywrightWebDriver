@@ -9,12 +9,12 @@ ext {
 
     // Dependency versions
     set('lombokVersion', '1.18.38')
-    set('seleniumVersion', '4.10.0')
+    set('seleniumVersion', '4.32.0')
     set('playwrightVersion', '1.52.0')
-    set('junitJupiterVersion', '5.9.2')
+    set('junitJupiterVersion', '5.12.2')
 }
 
-group = 'io.github.kmariusz.playwrightwebdriver'
+group = 'io.github.kmariusz'
 version = project.findProperty("releaseVersion") ?: project.ext.projectVersion
 
 repositories {
@@ -55,8 +55,8 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            groupId = 'io.github.kmariusz.playwrightwebdriver'
-            artifactId = 'playwright-webdriver'
+            groupId = 'io.github.kmariusz'
+            artifactId = 'playwrightwebdriver'
             version = project.ext.projectVersion
         }
     }
