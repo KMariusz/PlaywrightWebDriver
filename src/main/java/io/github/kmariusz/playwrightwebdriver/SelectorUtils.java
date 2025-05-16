@@ -31,8 +31,7 @@ public class SelectorUtils {
                 String name = byString.substring(9);
                 return String.format("[name='%s']", escapeAttributeValue(name));
             } else if (byString.startsWith("By.tagName: ")) {
-                String tagName = byString.substring(12);
-                return tagName;
+                return byString.substring(12);
             } else {
                 throw new IllegalArgumentException("Unsupported By selector: " + byString);
             }
@@ -43,7 +42,7 @@ public class SelectorUtils {
 
     private static String escapeCssSelector(String selector) {
         // Escape special CSS selector characters
-        return selector.replaceAll("([\\[\\]\\^$*.|?+{}=!<>:()\\-])", "\\\\$1");
+        return selector.replaceAll("([\\[\\]^$*.|?+{}=!<>:()\\-])", "\\\\$1");
     }
 
     private static String escapeTextSelector(String text) {
