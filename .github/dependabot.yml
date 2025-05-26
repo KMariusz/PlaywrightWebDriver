@@ -12,11 +12,6 @@ updates:
     commit-message:
       prefix: "build(deps)"
       include: "scope"
-    ignore:
-      # For more complex ignore patterns, you can add specific dependencies here
-      # For example:
-      # - dependency-name: "com.microsoft.playwright:playwright"
-      #   versions: ["< 1.0.0"]
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
