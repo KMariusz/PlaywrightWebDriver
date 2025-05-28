@@ -5,6 +5,36 @@
     <groupId>io.github.kmariusz</groupId>
     <artifactId>playwrightwebdriver</artifactId>
     <version>20250528</version>
+    <packaging>jar</packaging>
+    
+    <name>PlaywrightWebDriver</name>
+    <description>A Selenium WebDriver implementation using Microsoft Playwright</description>
+    <url>https://github.com/kmariusz/PlaywrightWebDriver</url>
+    
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    
+    <developers>
+        <developer>
+            <id>kmariusz</id>
+            <name>Mariusz Kowalski</name>
+            <email>kowalski.mariusz.87@gmail.com</email>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+    
+    <scm>
+        <connection>scm:git:git://github.com/kmariusz/PlaywrightWebDriver.git</connection>
+        <developerConnection>scm:git:ssh://github.com:kmariusz/PlaywrightWebDriver.git</developerConnection>
+        <url>https://github.com/kmariusz/PlaywrightWebDriver</url>
+    </scm>
 
     <properties>
         <!-- Build Configuration -->
@@ -21,6 +51,8 @@
         <maven.compiler.plugin.version>3.14.0</maven.compiler.plugin.version>
         <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.6.3</maven.javadoc.plugin.version>
+        <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
+        <central.publishing.plugin.version>0.7.0</central.publishing.plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -108,6 +140,35 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>${maven.gpg.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                        <configuration>
+                            <gpgArguments>
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>${central.publishing.plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                </configuration>
             </plugin>
         </plugins>
     </build>
