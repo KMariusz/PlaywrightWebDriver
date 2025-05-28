@@ -2,14 +2,41 @@ package io.github.kmariusz.playwrightwebdriver;
 
 import org.openqa.selenium.By;
 
+import lombok.experimental.UtilityClass;
+
+/**
+ * Utility class for converting Selenium By selectors to Playwright selector strings.
+ * <p>
+ * This class provides functionality to transform Selenium's By locators into equivalent
+ * Playwright selector strings, enabling interoperability between Selenium-based test code
+ * and Playwright-based implementations. This is particularly useful when migrating from
+ * Selenium to Playwright or when creating adapter layers between the two frameworks.
+ * </p>
+ */
+@UtilityClass
 public class SelectorUtils {
+    
+    /**
+     * Converts a Selenium By selector to an equivalent Playwright selector string.
+     * 
+     * @param by The Selenium By selector to convert
+     * @return A string representing the equivalent Playwright selector
+     * @throws IllegalArgumentException if the By selector is null or conversion fails
+     * 
+     * <p>Example usage:
+     * <pre>
+     *   // Converts "By.id("username")" to "#username"
+     *   String pwSelector = SelectorUtils.convertToPlaywrightSelector(By.id("username"));
+     * </pre>
+     */
     public static String convertToPlaywrightSelector(By by) {
         if (by == null) {
             throw new IllegalArgumentException("By selector cannot be null");
         }
 
         String byString = by.toString();
-
+        
+        // Check for known selector types
         try {
             if (byString.startsWith("By.id: ")) {
                 String id = byString.substring(7);
@@ -32,24 +59,58 @@ public class SelectorUtils {
                 return String.format("[name='%s']", escapeAttributeValue(name));
             } else if (byString.startsWith("By.tagName: ")) {
                 return byString.substring(12);
-            } else {
-                throw new IllegalArgumentException("Unsupported By selector: " + byString);
             }
+        } catch (StringIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException("Malformed By selector format: " + byString, e);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to convert By selector: " + byString, e);
+            throw new IllegalArgumentException("Error processing selector: " + byString, e);
         }
+        
+        // Handle unsupported selector types outside the try-catch block
+        throw new IllegalArgumentException("Unsupported By selector type: " + byString);
     }
 
+    /**
+     * Escapes special characters in CSS selectors.
+     * <p>
+     * Ensures characters with special meaning in CSS selectors are properly escaped
+     * so they're interpreted as literal characters. Special characters include: 
+     * [ ] ^ $ * . | ? + { } = ! < > : ( ) -
+     * </p>
+     *
+     * @param selector The CSS selector string to escape
+     * @return The escaped selector string
+     */
     private static String escapeCssSelector(String selector) {
         // Escape special CSS selector characters
         return selector.replaceAll("([\\[\\]^$*.|?+{}=!<>:()\\-])", "\\\\$1");
     }
 
+    /**
+     * Escapes text content for use in Playwright text selectors.
+     * <p>
+     * Handles escaping of single quotes by doubling them as per Playwright's text selector syntax.
+     * For example, "user's profile" becomes "user''s profile".
+     * </p>
+     *
+     * @param text The text content to escape
+     * @return The escaped text string
+     */
     private static String escapeTextSelector(String text) {
         // Escape single quotes in text selectors by doubling them
         return text.replace("'", "''");
     }
 
+    /**
+     * Escapes attribute values for use in Playwright attribute selectors.
+     * <p>
+     * Handles escaping of single quotes by doubling them as per Playwright's attribute selector syntax.
+     * For example, "John's data" becomes "John''s data" when used in attribute values.
+     * </p>
+     *
+     * @param value The attribute value to escape
+     * @return The escaped attribute value
+     */
     private static String escapeAttributeValue(String value) {
         // Escape single quotes in attribute values by doubling them
         return value.replace("'", "''");
