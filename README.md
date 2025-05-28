@@ -1,9 +1,28 @@
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.kmariusz/playwrightwebdriver)](https://central.sonatype.com/artifact/io.github.kmariusz/playwrightwebdriver)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
 # Playwright WebDriver
 
 A WebDriver implementation using Microsoft Playwright for Java, providing a Selenium WebDriver-compatible API with
 Playwright's powerful automation capabilities.
 
+## Table of Contents
+- [Features](#features)
+- [Known Bugs](#known-bugs)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration Options](#configuration-options)
+- [License](#license)
+
 ## Features
+
+PlaywrightWebDriver was created to quickly and easily replace Selenium WebDriver with Playwright execution engine.
+
+It supports most of the common Selenium operations on page objects and allows you to see how Selenium project tests would behave in Playwright.
+
+It is not comparable to full project migration from Selenium to Playwright. It is highly recommended to do so to fully utilize the potential of Playwright framework.
 
 - Implements Selenium WebDriver interface using Playwright
 - Supports Chrome, Firefox, and WebKit browsers
@@ -11,7 +30,18 @@ Playwright's powerful automation capabilities.
 - Automatic browser management
 - Screenshot support
 - Asynchronous JavaScript execution
-- Window and tab management
+
+## Known Bugs
+
+### JavaScript Code Execution
+
+JavaScript code in Selenium executed using [JavascriptExecutor](https://www.selenium.dev/selenium/docs/api/java/org/openqa/selenium/JavascriptExecutor.html) behaves differently than in Playwright's [evaluation](https://playwright.dev/docs/evaluating).
+
+The current implementation may not work properly with all types of JavaScript execution.
+
+### Issues
+
+There may be reported [issues](https://github.com/KMariusz/PlaywrightWebDriver/issues) that are still not resolved. Check them out.
 
 ## Requirements
 
@@ -24,10 +54,9 @@ Playwright's powerful automation capabilities.
 
 Add the following dependency to your `pom.xml`.
 Replace `LATEST_VERSION` with the latest release version
-from [GitHub Releases](https://github.com/KMariusz/PlaywrightWebDriver/releases):
+from [Maven Central](https://central.sonatype.com/artifact/io.github.kmariusz/playwrightwebdriver):
 
 ```xml
-
 <dependency>
     <groupId>io.github.kmariusz</groupId>
     <artifactId>playwrightwebdriver</artifactId>
@@ -39,7 +68,7 @@ from [GitHub Releases](https://github.com/KMariusz/PlaywrightWebDriver/releases)
 
 Add the following to your `build.gradle`.
 Replace `LATEST_VERSION` with the latest release version
-from [GitHub Releases](https://github.com/KMariusz/PlaywrightWebDriver/releases):
+from [Maven Central](https://central.sonatype.com/artifact/io.github.kmariusz/playwrightwebdriver):
 
 ```groovy
 dependencies {
@@ -101,18 +130,6 @@ PlaywrightWebDriverOptions options = PlaywrightWebDriverOptions.builder()
 
 PlaywrightWebDriver driver = new PlaywrightWebDriver(options);
 ```
-
-## Best Practices
-
-1. **Page Object Model**: Use the Page Object pattern to organize your tests and make them more maintainable.
-2. **Explicit Waits**: Always use explicit waits instead of thread sleeps.
-3. **Resource Management**: Always call `driver.quit()` in a `finally` block to ensure resources are properly released.
-4. **Selectors**: Prefer using stable selectors like `id` attributes for element location.
-5. **Configuration**: Use `PlaywrightWebDriverOptions` to configure browser settings instead of hardcoding them.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
