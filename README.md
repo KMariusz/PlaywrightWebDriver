@@ -107,7 +107,7 @@ PlaywrightWebDriver driver = new PlaywrightWebDriver(options);
 1. **Page Object Model**: Use the Page Object pattern to organize your tests and make them more maintainable.
 2. **Explicit Waits**: Always use explicit waits instead of thread sleeps.
 3. **Resource Management**: Always call `driver.quit()` in a `finally` block to ensure resources are properly released.
-4. **Selectors**: Prefer using stable selectors like `data-testid` attributes for element location.
+4. **Selectors**: Prefer using stable selectors like `id` attributes for element location.
 5. **Configuration**: Use `PlaywrightWebDriverOptions` to configure browser settings instead of hardcoding them.
 
 ## Contributing
