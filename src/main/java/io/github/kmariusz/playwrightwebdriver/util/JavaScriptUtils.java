@@ -10,6 +10,7 @@ import com.microsoft.playwright.Page;
 import io.github.kmariusz.playwrightwebdriver.PlaywrightWebElement;
 
 public class JavaScriptUtils {
+    
     public static Object executeScript(Page page, String script, Object... args) {
         if (script.startsWith("return ")) {
             script = script.substring(7);
@@ -20,9 +21,10 @@ public class JavaScriptUtils {
         }
 
         Map<Integer, PlaywrightWebElement> playwrightWebElements = getPlaywrightWebElements(args);
-        Object[] newArgs = replacePlaywrightWebElements(args, playwrightWebElements);
         
         if (!playwrightWebElements.isEmpty()) {
+            Object[] newArgs = replacePlaywrightWebElements(args, playwrightWebElements);
+            
             if (playwrightWebElements.size() == 1) {
                 int index = playwrightWebElements.keySet().iterator().next();
                 PlaywrightWebElement element = playwrightWebElements.get(index);
@@ -54,24 +56,27 @@ public class JavaScriptUtils {
 
     public static Map<Integer, PlaywrightWebElement> getPlaywrightWebElements(Object[] args) {
         Map<Integer, PlaywrightWebElement> playwrightWebElements = new java.util.HashMap<>();
+        
         for (int i = 0; i < args.length; i++) {
             if (isPlaywrightWebElement(args[i])) {
-                playwrightWebElements.put(i, (PlaywrightWebElement) (args[i] instanceof WrapsElement ? 
-                    ((WrapsElement) args[i]).getWrappedElement() : args[i]));
+                PlaywrightWebElement element = args[i] instanceof WrapsElement ? 
+                    (PlaywrightWebElement)((WrapsElement) args[i]).getWrappedElement() : 
+                    (PlaywrightWebElement)args[i];
+                    
+                playwrightWebElements.put(i, element);
             }
         }
+        
         return playwrightWebElements;
     }
 
     public static Object[] replacePlaywrightWebElements(Object[] args, Map<Integer, PlaywrightWebElement> playwrightWebElements) {
         Object[] newArgs = new Object[args.length];
+        
         for (int i = 0; i < args.length; i++) {
-            if (playwrightWebElements.containsKey(i)) {
-                newArgs[i] = null;
-            } else {
-                newArgs[i] = args[i];
-            }
+            newArgs[i] = playwrightWebElements.containsKey(i) ? null : args[i];
         }
+        
         return newArgs;
     }
 }
