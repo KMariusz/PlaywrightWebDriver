@@ -82,10 +82,13 @@ dependencies {
 
 ```java
 import io.github.kmariusz.playwrightwebdriver.PlaywrightWebDriver;
-import io.github.kmariusz.playwrightwebdriver.PlaywrightWebDriverOptions;
-import io.github.kmariusz.playwrightwebdriver.BrowserTypes;
+import io.github.kmariusz.playwrightwebdriver.config.PlaywrightWebDriverOptions;
+import io.github.kmariusz.playwrightwebdriver.config.BrowserTypes;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import java.io.File;
 
 public class ExampleTest {
     public static void main(String[] args) {
@@ -116,17 +119,30 @@ public class ExampleTest {
 
 ## Configuration Options
 
-You can customize the WebDriver behavior using `PlaywrightWebDriverOptions`:
+You can customize the WebDriver behavior using `PlaywrightWebDriverOptions`. This class provides a builder pattern to configure various aspects of browser behavior:
 
 ```java
+import io.github.kmariusz.playwrightwebdriver.PlaywrightWebDriver;
+import io.github.kmariusz.playwrightwebdriver.config.PlaywrightWebDriverOptions;
+import io.github.kmariusz.playwrightwebdriver.config.BrowserTypes;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Playwright;
+
+// Create options using the builder pattern
 PlaywrightWebDriverOptions options = PlaywrightWebDriverOptions.builder()
-        .browserType(BrowserTypes.FIREFOX)  // Use Firefox
-        .headless(false)                    // Run in headed mode
-        .windowWidth(1920)                  // Set window width
-        .windowHeight(1080)                 // Set window height
-        .ignoreHTTPSErrors(true)            // Ignore HTTPS errors
-        .slowMo(100)                        // Slow down execution by 100ms
+        .browserType(BrowserTypes.FIREFOX)  // Choose browser type: CHROMIUM (default), FIREFOX, or WEBKIT
         .build();
+
+// Or use the fluent API with setter methods
+PlaywrightWebDriverOptions options = new PlaywrightWebDriverOptions()
+        .setBrowserType(BrowserTypes.FIREFOX)
+        .setLaunchOptions(new BrowserType.LaunchOptions()
+            .setHeadless(false)
+            .setSlowMo(100))
+        .setContextOptions(new Browser.NewContextOptions()
+            .setViewportSize(1920, 1080)
+            .setIgnoreHTTPSErrors(true));
 
 PlaywrightWebDriver driver = new PlaywrightWebDriver(options);
 ```
