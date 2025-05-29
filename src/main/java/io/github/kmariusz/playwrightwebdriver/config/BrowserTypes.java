@@ -1,4 +1,4 @@
-package io.github.kmariusz.playwrightwebdriver;
+package io.github.kmariusz.playwrightwebdriver.config;
 
 /**
  * Enum representing different browser types supported by Playwright.

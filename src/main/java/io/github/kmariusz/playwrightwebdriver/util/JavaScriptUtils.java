@@ -1,8 +1,11 @@
-package io.github.kmariusz.playwrightwebdriver;
+package io.github.kmariusz.playwrightwebdriver.util;
+
+import org.openqa.selenium.WrapsElement;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import org.openqa.selenium.WrapsElement;
+
+import io.github.kmariusz.playwrightwebdriver.PlaywrightWebElement;
 
 public class JavaScriptUtils {
     public static Object executeScript(Page page, String script, Object... args) {
