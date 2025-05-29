@@ -230,7 +230,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      */
     @Override
     public Object executeScript(String script, Object... args) {
-        return page.evaluate(script, args);
+        return JavaScriptUtils.executeScript(page, script, args);
     }
 
     /**
@@ -243,19 +243,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      */
     @Override
     public Object executeAsyncScript(String script, Object... args) {
-        // Convert the script to a Promise-based function
-        String wrappedScript = "(async () => {\n" +
-                "  const callback = arguments[arguments.length - 1];\n" +
-                "  try {\n" +
-                "    const result = " + script + ";\n" +
-                "    callback({status: 'success', result: await result});\n" +
-                "  } catch (e) {\n" +
-                "    callback({status: 'error', message: e.toString()});\n" +
-                "  }\n" +
-                "})();";
-
-        // Execute the script with a timeout
-        return page.evaluate(wrappedScript, args);
+        return JavaScriptUtils.executeAsyncScript(page, script, args);
     }
 
     /**
