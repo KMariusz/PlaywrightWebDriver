@@ -1,8 +1,7 @@
 package io.github.kmariusz.playwrightwebdriver.util;
 
-import org.openqa.selenium.By;
-
 import lombok.experimental.UtilityClass;
+import org.openqa.selenium.By;
 
 /**
  * Utility class for converting Selenium By selectors to Playwright selector strings.
@@ -15,19 +14,17 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class SelectorUtils {
-    
     /**
-     * Converts a Selenium By selector to an equivalent Playwright selector string.
-     * 
+     * Converts a Selenium By selector to a Playwright selector string.
+     * <p>
+     * This method takes a Selenium By selector and converts it into a Playwright-compatible
+     * selector string. It supports various types of selectors including id, class, CSS,
+     * XPath, link text, partial link text, name, and tag name.
+     * </p>
+     *
      * @param by The Selenium By selector to convert
-     * @return A string representing the equivalent Playwright selector
-     * @throws IllegalArgumentException if the By selector is null or conversion fails
-     * 
-     * <p>Example usage:
-     * <pre>
-     *   // Converts "By.id("username")" to "#username"
-     *   String pwSelector = SelectorUtils.convertToPlaywrightSelector(By.id("username"));
-     * </pre>
+     * @return The corresponding Playwright selector string
+     * @throws IllegalArgumentException if the By selector is null or unsupported
      */
     public static String convertToPlaywrightSelector(By by) {
         if (by == null) {
@@ -35,7 +32,7 @@ public class SelectorUtils {
         }
 
         String byString = by.toString();
-        
+
         // Check for known selector types
         try {
             if (byString.startsWith("By.id: ")) {
@@ -65,7 +62,7 @@ public class SelectorUtils {
         } catch (Exception e) {
             throw new IllegalArgumentException("Error processing selector: " + byString, e);
         }
-        
+
         // Handle unsupported selector types outside the try-catch block
         throw new IllegalArgumentException("Unsupported By selector type: " + byString);
     }
@@ -74,7 +71,7 @@ public class SelectorUtils {
      * Escapes special characters in CSS selectors.
      * <p>
      * Ensures characters with special meaning in CSS selectors are properly escaped
-     * so they're interpreted as literal characters. Special characters include: 
+     * so they're interpreted as literal characters. Special characters include:
      * [ ] ^ $ * . | ? + { } = ! < > : ( ) -
      * </p>
      *

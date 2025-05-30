@@ -1,9 +1,10 @@
 package io.github.kmariusz.playwrightwebdriver;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
+import com.microsoft.playwright.Locator;
+import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
@@ -14,12 +15,9 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Coordinates;
 import org.openqa.selenium.remote.RemoteWebElement;
 
-import com.microsoft.playwright.Locator;
-
-import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.Accessors;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of Selenium's WebElement interface using Playwright.
@@ -30,20 +28,26 @@ import lombok.experimental.Accessors;
 @RequiredArgsConstructor
 @Accessors(fluent = true)
 public class PlaywrightWebElement extends RemoteWebElement {
-    /** The Playwright WebDriver instance that created this element */
+    /**
+     * The Playwright WebDriver instance that created this element
+     */
     private final PlaywrightWebDriver driver;
-    
-    /** The Playwright Locator that represents this element */
+
+    /**
+     * The Playwright Locator that represents this element
+     */
     private final Locator locator;
 
     private final String selector;
-    
-    /** Unique identifier for this element */
+
+    /**
+     * Unique identifier for this element
+     */
     private final String playwrightElementId = UUID.randomUUID().toString();
 
     /**
      * Returns the unique identifier for this element.
-     * 
+     *
      * @return A UUID string that uniquely identifies this element instance
      */
     @Override
@@ -72,7 +76,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
     /**
      * Simulates typing into the element.
      * This method will first clear any existing content before typing the new text.
-     * 
+     *
      * @param keysToSend Character sequence(s) to send to the element
      */
     @Override
@@ -242,7 +246,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
     /**
      * Takes a screenshot of this element.
      *
-     * @param <X> Return type of the screenshot output
+     * @param <X>    Return type of the screenshot output
      * @param target Target output type
      * @return The screenshot as the specified output type
      * @throws WebDriverException When the operation fails
@@ -286,7 +290,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
 
     /**
      * Sets the parent driver for this element.
-     * This method is not part of the WebElement interface but is required by 
+     * This method is not part of the WebElement interface but is required by
      * RemoteWebElement in newer Selenium versions.
      *
      * @param parent The parent RemoteWebDriver instance

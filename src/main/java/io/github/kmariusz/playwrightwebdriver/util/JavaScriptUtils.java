@@ -1,16 +1,14 @@
 package io.github.kmariusz.playwrightwebdriver.util;
 
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
+import io.github.kmariusz.playwrightwebdriver.PlaywrightWebElement;
+import lombok.experimental.UtilityClass;
+import org.openqa.selenium.WrapsElement;
+
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import org.openqa.selenium.WrapsElement;
-
-import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.Page;
-
-import io.github.kmariusz.playwrightwebdriver.PlaywrightWebElement;
-import lombok.experimental.UtilityClass;
 
 /**
  * Utility class for executing JavaScript code in the context of Playwright's Page or Locator.
@@ -115,8 +113,8 @@ public class JavaScriptUtils {
     /**
      * Replaces PlaywrightWebElement arguments with Playwright node handles for script execution.
      *
-     * @param args                   the original argument array
-     * @param playwrightWebElements  map of indices to PlaywrightWebElement instances
+     * @param args                  the original argument array
+     * @param playwrightWebElements map of indices to PlaywrightWebElement instances
      * @return a new argument array with PlaywrightWebElements replaced by node handles
      */
     private static Object[] replacePlaywrightWebElements(Object[] args, Map<Integer, PlaywrightWebElement> playwrightWebElements) {

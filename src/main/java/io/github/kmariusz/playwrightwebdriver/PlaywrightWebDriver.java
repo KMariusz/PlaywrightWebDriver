@@ -1,5 +1,18 @@
 package io.github.kmariusz.playwrightwebdriver;
 
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
+import io.github.kmariusz.playwrightwebdriver.config.PlaywrightWebDriverOptions;
+import io.github.kmariusz.playwrightwebdriver.util.JavaScriptUtils;
+import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
+import org.openqa.selenium.By;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.RemoteWebDriver;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -7,21 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import org.openqa.selenium.By;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.WebDriverException;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.remote.RemoteWebDriver;
-
-import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Playwright;
-
-import io.github.kmariusz.playwrightwebdriver.config.PlaywrightWebDriverOptions;
-import io.github.kmariusz.playwrightwebdriver.util.JavaScriptUtils;
-import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
 
 /**
  * A Selenium WebDriver implementation that uses Playwright as the underlying automation engine.
@@ -31,27 +29,39 @@ import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
  * compatibility with the Selenium WebDriver interface. This allows existing Selenium-based test
  * suites to leverage Playwright's performance and reliability advantages with minimal code changes.
  * <p>
- * Note that some advanced Playwright features may not be directly accessible through the standard 
- * WebDriver interfaces. For these cases, use the {@link #getPlaywrightPage()} and 
+ * Note that some advanced Playwright features may not be directly accessible through the standard
+ * WebDriver interfaces. For these cases, use the {@link #getPlaywrightPage()} and
  * {@link #getPlaywrightContext()} methods to access the native Playwright objects.
  */
 public class PlaywrightWebDriver extends RemoteWebDriver {
-    /** The Playwright instance used for browser automation. */
+    /**
+     * The Playwright instance used for browser automation.
+     */
     private final Playwright playwright;
-    
-    /** The Browser instance representing the automated browser. */
+
+    /**
+     * The Browser instance representing the automated browser.
+     */
     private final Browser browser;
-    
-    /** The BrowserContext instance representing an isolated browser session. */
+
+    /**
+     * The BrowserContext instance representing an isolated browser session.
+     */
     private final BrowserContext context;
-    
-    /** The Page instance representing a single tab or window within the browser. */
+
+    /**
+     * The Page instance representing a single tab or window within the browser.
+     */
     private final Page page;
-    
-    /** Map of window handles (UUIDs) to their URLs, for multi-window session management. */
+
+    /**
+     * Map of window handles (UUIDs) to their URLs, for multi-window session management.
+     */
     private final Map<String, String> windowHandles = new HashMap<>();
-    
-    /** The identifier for the currently active window handle. */
+
+    /**
+     * The identifier for the currently active window handle.
+     */
     private String currentWindowHandle;
 
     /**
@@ -66,7 +76,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      *
      * @param options the configuration options for this WebDriver instance, or null for default options
      * @throws IllegalArgumentException if an unsupported browser type is specified in the options
-     * @throws RuntimeException if there's a failure initializing Playwright components
+     * @throws RuntimeException         if there's a failure initializing Playwright components
      */
     public PlaywrightWebDriver(PlaywrightWebDriverOptions options) {
         if (options == null) {
@@ -233,11 +243,26 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
         return currentWindowHandle;
     }
 
+    @Override
+    public TargetLocator switchTo() {
+        return null;
+    }
+
+    @Override
+    public Navigation navigate() {
+        return null;
+    }
+
+    @Override
+    public Options manage() {
+        return null;
+    }
+
     /**
      * Executes JavaScript code in the context of the current page.
      *
      * @param script the JavaScript code to execute
-     * @param args the arguments to pass to the script
+     * @param args   the arguments to pass to the script
      * @return the value returned by the script, or null if the script returns undefined
      */
     @Override
@@ -250,7 +275,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      * The script is wrapped in a Promise-based function to handle async execution.
      *
      * @param script the JavaScript code to execute asynchronously
-     * @param args the arguments to pass to the script
+     * @param args   the arguments to pass to the script
      * @return the value returned by the script when the Promise resolves
      */
     @Override
@@ -262,7 +287,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      * Takes a screenshot of the current page.
      *
      * @param target the output type for the screenshot
-     * @param <X> the return type of the screenshot output
+     * @param <X>    the return type of the screenshot output
      * @return the screenshot as the specified output type
      * @throws WebDriverException if the screenshot could not be taken or processed
      */
