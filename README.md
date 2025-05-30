@@ -40,6 +40,10 @@ JavaScript code in Selenium executed using [JavascriptExecutor](https://www.sele
 The current implementation may not work properly with all types of JavaScript execution.
 It has been tested on various examples. However, please report any [issues](https://github.com/KMariusz/PlaywrightWebDriver/issues) you encounter.
 
+### WebDriver BiDi
+PlaywrightWebDriver does not support WebDriver BiDi protocol. It is a work in progress and will be implemented in the future.
+Current status can be tracked [here](https://github.com/microsoft/playwright/issues/32577)
+
 ### Issues
 
 There may be reported [issues](https://github.com/KMariusz/PlaywrightWebDriver/issues) that are still not resolved. Check them out.

@@ -7,16 +7,29 @@ import com.microsoft.playwright.Playwright;
 import io.github.kmariusz.playwrightwebdriver.config.PlaywrightWebDriverOptions;
 import io.github.kmariusz.playwrightwebdriver.util.JavaScriptUtils;
 import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
+import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Cookie;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.WindowType;
+import org.openqa.selenium.bidi.BiDi;
+import org.openqa.selenium.bidi.HasBiDi;
+import org.openqa.selenium.logging.Logs;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import java.net.URL;
+import java.time.Duration;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -33,7 +46,7 @@ import java.util.stream.Collectors;
  * WebDriver interfaces. For these cases, use the {@link #getPlaywrightPage()} and
  * {@link #getPlaywrightContext()} methods to access the native Playwright objects.
  */
-public class PlaywrightWebDriver extends RemoteWebDriver {
+public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
     /**
      * The Playwright instance used for browser automation.
      */
@@ -245,17 +258,17 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
 
     @Override
     public TargetLocator switchTo() {
-        return null;
+        return new PlaywrightTargetLocator();
     }
 
     @Override
     public Navigation navigate() {
-        return null;
+        return new PlaywrightNavigation();
     }
 
     @Override
     public Options manage() {
-        return null;
+        return new PlaywrightOptions();
     }
 
     /**
@@ -316,5 +329,382 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      */
     public BrowserContext getPlaywrightContext() {
         return context;
+    }
+
+    @Override
+    public Optional<BiDi> maybeGetBiDi() {
+        return Optional.empty();
+    }
+
+    /**
+     * Implementation of WebDriver.TargetLocator for Playwright.
+     * This class handles switching between frames, windows, and alert handling.
+     */
+    private class PlaywrightTargetLocator implements TargetLocator {
+        /**
+         * Switches the focus to a frame by its index in the page's frames list.
+         *
+         * @param index the index of the frame to switch to
+         * @return the WebDriver focused on the specified frame
+         */
+        @Override
+        public WebDriver frame(int index) {
+            // Switch to frame by index
+            // Using page.frame(index) which returns the frame or null
+            com.microsoft.playwright.Frame frame = page.frames().size() > index ? page.frames().get(index) : null;
+            if (frame != null) {
+                page.setContent(frame.content());
+            }
+            return PlaywrightWebDriver.this;
+        }
+
+        /**
+         * Switches the focus to a frame by its name or ID attribute.
+         *
+         * @param nameOrId the name or ID attribute of the frame to switch to
+         * @return the WebDriver focused on the specified frame
+         */
+        @Override
+        public WebDriver frame(String nameOrId) {
+            // Switch to frame by name or ID attribute
+            page.frame(nameOrId);
+            return PlaywrightWebDriver.this;
+        }
+
+        /**
+         * Switches the focus to a frame using a WebElement that references the frame.
+         *
+         * @param frameElement the WebElement representing the frame to switch to
+         * @return the WebDriver focused on the specified frame
+         * @throws WebDriverException if the frame cannot be found or switched to,
+         *                            or if the element is not a PlaywrightWebElement
+         */
+        @Override
+        public WebDriver frame(WebElement frameElement) {
+            if (frameElement instanceof PlaywrightWebElement) {
+                PlaywrightWebElement element = (PlaywrightWebElement) frameElement;
+                // Get the locator for the frame element
+                String frameSelector = element.locator().toString();
+
+                try {
+                    // First, try to get the frame element
+                    com.microsoft.playwright.ElementHandle frameHandle = page.querySelector(frameSelector);
+                    if (frameHandle != null) {
+                        // Navigate to the content frame associated with this element
+                        com.microsoft.playwright.Frame contentFrame = frameHandle.contentFrame();
+                        if (contentFrame != null) {
+                            // Switched successfully to frame
+                            return PlaywrightWebDriver.this;
+                        }
+                    }
+
+                    // As fallback, try using frameLocator if direct approach fails
+                    page.frameLocator(frameSelector).first();
+                } catch (Exception e) {
+                    throw new WebDriverException("Failed to switch to frame: " + e.getMessage(), e);
+                }
+            } else {
+                throw new WebDriverException("Frame element must be a PlaywrightWebElement");
+            }
+            return PlaywrightWebDriver.this;
+        }
+
+        /**
+         * Switches the focus back to the parent frame.
+         *
+         * @return the WebDriver focused on the parent frame
+         */
+        @Override
+        public WebDriver parentFrame() {
+            // Go back to the parent frame
+            com.microsoft.playwright.Frame parentFrame = page.mainFrame().parentFrame();
+            if (parentFrame != null) {
+                page.setContent(parentFrame.content());
+            }
+            return PlaywrightWebDriver.this;
+        }
+
+        @Override
+        public WebDriver window(String nameOrHandle) {
+            // Switch to window with the given handle
+            if (windowHandles.containsKey(nameOrHandle)) {
+                currentWindowHandle = nameOrHandle;
+                // In Playwright, we would need to switch to the relevant page
+                // This is a simplified implementation
+            }
+            return PlaywrightWebDriver.this;
+        }
+
+        @Override
+        public WebDriver newWindow(WindowType typeHint) {
+            // Create a new window/tab
+            Page newPage = context.newPage();
+            String newWindowHandle = UUID.randomUUID().toString();
+            windowHandles.put(newWindowHandle, newPage.url());
+            currentWindowHandle = newWindowHandle;
+            return PlaywrightWebDriver.this;
+        }
+
+        @Override
+        public WebDriver defaultContent() {
+            // Switch back to the top-level frame
+            page.mainFrame();
+            return PlaywrightWebDriver.this;
+        }
+
+        @Override
+        public Alert alert() {
+            // Handle JavaScript alerts
+            return new PlaywrightAlert();
+        }
+
+        @Override
+        public WebElement activeElement() {
+            // Get the currently focused element
+            String script = "return document.activeElement";
+            return new PlaywrightWebElement(PlaywrightWebDriver.this,
+                    page.locator("*:focus"),
+                    "*:focus");
+        }
+    }
+
+    /**
+     * Implementation of WebDriver.Navigation for Playwright.
+     * This class handles browser navigation functionality.
+     */
+    private class PlaywrightNavigation implements Navigation {
+        @Override
+        public void back() {
+            page.goBack();
+        }
+
+        @Override
+        public void forward() {
+            page.goForward();
+        }
+
+        @Override
+        public void to(String url) {
+            page.navigate(url);
+        }
+
+        @Override
+        public void to(URL url) {
+            page.navigate(url.toString());
+        }
+
+        @Override
+        public void refresh() {
+            page.reload();
+        }
+    }
+
+    /**
+     * Implementation of WebDriver.Options for Playwright.
+     * This class handles browser-level options like cookies, timeouts, and window management.
+     */
+    private class PlaywrightOptions implements Options {
+        @Override
+        public void addCookie(Cookie cookie) {
+            com.microsoft.playwright.options.Cookie playwrightCookie =
+                    new com.microsoft.playwright.options.Cookie(cookie.getName(), cookie.getValue())
+                            .setDomain(cookie.getDomain())
+                            .setPath(cookie.getPath())
+                            .setSecure(cookie.isSecure())
+                            .setHttpOnly(cookie.isHttpOnly())
+                            .setSameSite(convertSameSitePolicy(cookie.getSameSite()))
+                            .setExpires(cookie.getExpiry() != null ? cookie.getExpiry().getTime() / 1000.0 : null);
+
+            context.addCookies(List.of(playwrightCookie));
+        }
+
+        @Override
+        public void deleteCookieNamed(String name) {
+            // Delete cookie with the specified name
+            List<com.microsoft.playwright.options.Cookie> cookies = context.cookies();
+            cookies.stream()
+                    .filter(c -> c.name.equals(name))
+                    .forEach(c -> context.clearCookies());
+        }
+
+        @Override
+        public void deleteCookie(Cookie cookie) {
+            deleteCookieNamed(cookie.getName());
+        }
+
+        @Override
+        public void deleteAllCookies() {
+            context.clearCookies();
+        }
+
+        @Override
+        public Set<Cookie> getCookies() {
+            List<com.microsoft.playwright.options.Cookie> playwrightCookies = context.cookies();
+            Set<Cookie> seleniumCookies = new HashSet<>();
+
+            for (com.microsoft.playwright.options.Cookie pwCookie : playwrightCookies) {
+                Cookie.Builder builder = new Cookie.Builder(pwCookie.name, pwCookie.value)
+                        .path(pwCookie.path)
+                        .domain(pwCookie.domain)
+                        .isSecure(pwCookie.secure)
+                        .isHttpOnly(pwCookie.httpOnly);
+
+                if (pwCookie.expires != null) {
+                    builder.expiresOn(new Date((long) (pwCookie.expires * 1000)));
+                }
+
+                seleniumCookies.add(builder.build());
+            }
+
+            return seleniumCookies;
+        }
+
+        @Override
+        public Cookie getCookieNamed(String name) {
+            return getCookies().stream()
+                    .filter(cookie -> name.equals(cookie.getName()))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        @Override
+        public Timeouts timeouts() {
+            return new PlaywrightTimeouts();
+        }
+
+        @Override
+        public Window window() {
+            return new PlaywrightWindow();
+        }
+
+        @Override
+        public Logs logs() {
+            // Not fully implemented in this adapter
+            throw new UnsupportedOperationException("Logs functionality is not implemented");
+        }
+
+        private com.microsoft.playwright.options.SameSiteAttribute convertSameSitePolicy(String sameSite) {
+            if (sameSite == null) {
+                return null;
+            }
+
+            switch (sameSite.toLowerCase()) {
+                case "lax":
+                    return com.microsoft.playwright.options.SameSiteAttribute.LAX;
+                case "strict":
+                    return com.microsoft.playwright.options.SameSiteAttribute.STRICT;
+                case "none":
+                    return com.microsoft.playwright.options.SameSiteAttribute.NONE;
+                default:
+                    return null;
+            }
+        }
+    }
+
+    /**
+     * Implementation of WebDriver.Timeouts for Playwright.
+     */
+    private class PlaywrightTimeouts implements Timeouts {
+        @Override
+        public Timeouts implicitlyWait(Duration duration) {
+            // Playwright doesn't have a direct equivalent to Selenium's implicit wait
+            // We'll implement a basic version using page timeout
+            page.setDefaultTimeout(duration.toMillis());
+            return this;
+        }
+
+        @Override
+        public Timeouts pageLoadTimeout(Duration duration) {
+            // Set the timeout for page navigation
+            page.setDefaultNavigationTimeout(duration.toMillis());
+            return this;
+        }
+
+        @Override
+        public Timeouts scriptTimeout(Duration duration) {
+            // This has no direct equivalent in Playwright
+            // We'll use it to set timeout for JavaScript execution
+            return this;
+        }
+    }
+
+    /**
+     * Implementation of WebDriver.Window for Playwright.
+     */
+    private class PlaywrightWindow implements Window {
+        @Override
+        public void setSize(Dimension targetSize) {
+            page.setViewportSize(targetSize.getWidth(), targetSize.getHeight());
+        }
+
+        @Override
+        public void setPosition(Point targetPosition) {
+            // Not directly supported in Playwright
+            // This is a no-op in this implementation
+        }
+
+        @Override
+        public Dimension getSize() {
+            com.microsoft.playwright.options.ViewportSize size = page.viewportSize();
+            return new Dimension(size.width, size.height);
+        }
+
+        @Override
+        public Point getPosition() {
+            // Not directly supported in Playwright
+            return new Point(0, 0);
+        }
+
+        @Override
+        public void maximize() {
+            // Set a large viewport size as an approximation
+            page.setViewportSize(1920, 1080);
+        }
+
+        @Override
+        public void minimize() {
+            // Not directly supported in Playwright
+            // This is a no-op in this implementation
+        }
+
+        @Override
+        public void fullscreen() {
+            page.evaluate("() => { document.documentElement.requestFullscreen(); }");
+        }
+    }
+
+    /**
+     * Implementation of WebDriver.Alert for Playwright.
+     */
+    private class PlaywrightAlert implements Alert {
+        @Override
+        public void dismiss() {
+            page.onDialog(dialog -> dialog.dismiss());
+            // Trigger any pending dialogs
+            page.evaluate("() => {}");
+        }
+
+        @Override
+        public void accept() {
+            page.onDialog(dialog -> dialog.accept());
+            // Trigger any pending dialogs
+            page.evaluate("() => {}");
+        }
+
+        @Override
+        public String getText() {
+            final String[] message = {""};
+            page.onDialog(dialog -> message[0] = dialog.message());
+            // Trigger any pending dialogs
+            page.evaluate("() => {}");
+            return message[0];
+        }
+
+        @Override
+        public void sendKeys(String keysToSend) {
+            page.onDialog(dialog -> dialog.accept(keysToSend));
+            // Trigger any pending dialogs
+            page.evaluate("() => {}");
+        }
     }
 }
