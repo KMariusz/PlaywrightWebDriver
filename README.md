@@ -38,6 +38,7 @@ It is not comparable to full project migration from Selenium to Playwright. It i
 JavaScript code in Selenium executed using [JavascriptExecutor](https://www.selenium.dev/selenium/docs/api/java/org/openqa/selenium/JavascriptExecutor.html) behaves differently than in Playwright's [evaluation](https://playwright.dev/docs/evaluating).
 
 The current implementation may not work properly with all types of JavaScript execution.
+It has been tested on various examples. However, please report any [issues](https://github.com/KMariusz/PlaywrightWebDriver/issues) you encounter.
 
 ### Issues
 
