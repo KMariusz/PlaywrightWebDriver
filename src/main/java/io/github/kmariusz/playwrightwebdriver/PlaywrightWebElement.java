@@ -35,6 +35,8 @@ public class PlaywrightWebElement extends RemoteWebElement {
     
     /** The Playwright Locator that represents this element */
     private final Locator locator;
+
+    private final String selector;
     
     /** Unique identifier for this element */
     private final String playwrightElementId = UUID.randomUUID().toString();
@@ -153,7 +155,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
         return locator.locator(selector)
                 .all()
                 .stream()
-                .map(l -> new PlaywrightWebElement(driver, l))
+                .map(l -> new PlaywrightWebElement(driver, l, selector))
                 .collect(Collectors.toList());
     }
 
@@ -166,7 +168,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
     @Override
     public WebElement findElement(By by) {
         String selector = SelectorUtils.convertToPlaywrightSelector(by);
-        return new PlaywrightWebElement(driver, locator.locator(selector));
+        return new PlaywrightWebElement(driver, locator.locator(selector), selector);
     }
 
     /**

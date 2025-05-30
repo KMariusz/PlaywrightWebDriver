@@ -1,6 +1,8 @@
 package io.github.kmariusz.playwrightwebdriver.util;
 
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.openqa.selenium.WrapsElement;
 
@@ -8,75 +10,128 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 
 import io.github.kmariusz.playwrightwebdriver.PlaywrightWebElement;
+import lombok.experimental.UtilityClass;
 
+/**
+ * Utility class for executing JavaScript code in the context of Playwright's Page or Locator.
+ * <p>
+ * This class provides static methods to evaluate JavaScript code, handling the conversion of Selenium WebElement
+ * arguments (specifically {@link io.github.kmariusz.playwrightwebdriver.PlaywrightWebElement}) to Playwright node handles.
+ * <br>
+ * <b>Note:</b> All script execution is synchronous. There is no true asynchronous execution; the {@code executeAsyncScript}
+ * method is an alias for {@code executeScript} and does not provide asynchronous behavior.
+ * </p>
+ */
+@UtilityClass
 public class JavaScriptUtils {
-    
-    public static Object executeScript(Page page, String script, Object... args) {
-        if (script.startsWith("return ")) {
-            script = script.substring(7);
-        }
 
+    /**
+     * Executes JavaScript code in the context of the given Playwright Page.
+     * <p>
+     * If any argument is a {@link io.github.kmariusz.playwrightwebdriver.PlaywrightWebElement} (or wraps one),
+     * it is converted to a Playwright node handle and passed to the script. If only one such element is present,
+     * the script is executed in the context of that node. Otherwise, all arguments are passed as an array.
+     * </p>
+     *
+     * @param page   the Playwright Page to execute the script in
+     * @param script the JavaScript code to execute
+     * @param args   arguments to pass to the script; may include PlaywrightWebElement or WrapsElement
+     * @return the result of the script execution
+     */
+    public static Object executeScript(Page page, String script, Object... args) {
         if (args == null || args.length == 0) {
-            return page.evaluate(script);
+            return page.evaluate("() => {" + script + "}");
         }
 
         Map<Integer, PlaywrightWebElement> playwrightWebElements = getPlaywrightWebElements(args);
-        
-        if (!playwrightWebElements.isEmpty()) {
-            Object[] newArgs = replacePlaywrightWebElements(args, playwrightWebElements);
-            
-            if (playwrightWebElements.size() == 1) {
-                int index = playwrightWebElements.keySet().iterator().next();
-                PlaywrightWebElement element = playwrightWebElements.get(index);
-                Locator locator = element.locator();
-                
-                if (args.length == 1) {
-                    script = "node => " + script.replace("arguments[" + index + "]", "node");
-                    return locator.evaluate(script);
-                }
-                
-                script = "(node, arguments) => " + script.replace("arguments[" + index + "]", "node");
-                return locator.evaluate(script, newArgs);
-            }
+        if (playwrightWebElements.isEmpty()) {
+            script = "(arguments) => {" + script + "}";
+            return page.evaluate(script, args);
         }
-        
-        script = "(arguments) => " + script;
-        return page.evaluate(script, args);
+
+        Object[] newArgs = replacePlaywrightWebElements(args, playwrightWebElements);
+
+        if (playwrightWebElements.size() == 1) {
+            int index = playwrightWebElements.keySet().iterator().next();
+            PlaywrightWebElement element = playwrightWebElements.get(index);
+            Locator locator = element.locator();
+            script = "(node, arguments) => {" + script.replace("arguments[" + index + "]", "node") + "}";
+            return locator.evaluate(script, newArgs);
+        }
+
+        script = "(arguments) => {" + script + "}";
+        return page.evaluate(script, newArgs);
     }
 
+    /**
+     * Executes JavaScript code in the context of the given Playwright Page.
+     * <p>
+     * This method is an alias for {@link #executeScript(Page, String, Object...)} and does not provide asynchronous execution.
+     * All script execution is synchronous.
+     * </p>
+     *
+     * @param page   the Playwright Page to execute the script in
+     * @param script the JavaScript code to execute (synchronously)
+     * @param args   arguments to pass to the script
+     * @return the result of the script execution
+     */
     public static Object executeAsyncScript(Page page, String script, Object... args) {
         return executeScript(page, script, args);
     }
 
-    public static boolean isPlaywrightWebElement(Object arg) {
-        return arg instanceof PlaywrightWebElement || 
-               (arg instanceof WrapsElement && 
-                ((WrapsElement) arg).getWrappedElement() instanceof PlaywrightWebElement);
+    /**
+     * Checks if the argument is a PlaywrightWebElement or wraps one.
+     *
+     * @param arg the argument to check
+     * @return true if the argument is or wraps a PlaywrightWebElement, false otherwise
+     */
+    private static boolean isPlaywrightWebElement(Object arg) {
+        return arg instanceof PlaywrightWebElement ||
+                (arg instanceof WrapsElement &&
+                        ((WrapsElement) arg).getWrappedElement() instanceof PlaywrightWebElement);
     }
 
-    public static Map<Integer, PlaywrightWebElement> getPlaywrightWebElements(Object[] args) {
-        Map<Integer, PlaywrightWebElement> playwrightWebElements = new java.util.HashMap<>();
-        
-        for (int i = 0; i < args.length; i++) {
-            if (isPlaywrightWebElement(args[i])) {
-                PlaywrightWebElement element = args[i] instanceof WrapsElement ? 
-                    (PlaywrightWebElement)((WrapsElement) args[i]).getWrappedElement() : 
-                    (PlaywrightWebElement)args[i];
-                    
-                playwrightWebElements.put(i, element);
-            }
-        }
-        
-        return playwrightWebElements;
+    /**
+     * Extracts all PlaywrightWebElement instances from the argument array, mapping their indices.
+     *
+     * @param args the argument array
+     * @return a map of argument indices to PlaywrightWebElement instances
+     */
+    private static Map<Integer, PlaywrightWebElement> getPlaywrightWebElements(Object[] args) {
+        return IntStream.range(0, args.length)
+                .filter(i -> isPlaywrightWebElement(args[i]))
+                .boxed()
+                .collect(Collectors.toMap(
+                        i -> i,
+                        i -> {
+                            Object arg = args[i];
+                            return arg instanceof WrapsElement ?
+                                    (PlaywrightWebElement) ((WrapsElement) arg).getWrappedElement() :
+                                    (PlaywrightWebElement) arg;
+                        }
+                ));
     }
 
-    public static Object[] replacePlaywrightWebElements(Object[] args, Map<Integer, PlaywrightWebElement> playwrightWebElements) {
-        Object[] newArgs = new Object[args.length];
-        
-        for (int i = 0; i < args.length; i++) {
-            newArgs[i] = playwrightWebElements.containsKey(i) ? null : args[i];
-        }
-        
-        return newArgs;
+    /**
+     * Replaces PlaywrightWebElement arguments with Playwright node handles for script execution.
+     *
+     * @param args                   the original argument array
+     * @param playwrightWebElements  map of indices to PlaywrightWebElement instances
+     * @return a new argument array with PlaywrightWebElements replaced by node handles
+     */
+    private static Object[] replacePlaywrightWebElements(Object[] args, Map<Integer, PlaywrightWebElement> playwrightWebElements) {
+        return IntStream.range(0, args.length)
+                .mapToObj(i -> playwrightWebElements.containsKey(i) ? mapPlaywrightWebElement(playwrightWebElements.get(i)) : args[i])
+                .toArray();
+    }
+
+    /**
+     * Maps a PlaywrightWebElement to a Playwright node handle for use in script evaluation.
+     *
+     * @param playwrightWebElement the PlaywrightWebElement to map
+     * @return a Playwright node handle
+     */
+    private static Object mapPlaywrightWebElement(PlaywrightWebElement playwrightWebElement) {
+        return playwrightWebElement.locator().evaluateHandle("(node) => node");
     }
 }

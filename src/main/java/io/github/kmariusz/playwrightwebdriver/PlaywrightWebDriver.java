@@ -156,7 +156,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
         return page.locator(selector)
                 .all()
                 .stream()
-                .map(locator -> new PlaywrightWebElement(this, locator))
+                .map(locator -> new PlaywrightWebElement(this, locator, selector))
                 .collect(Collectors.toList());
     }
 
@@ -171,7 +171,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
     @Override
     public WebElement findElement(By by) {
         String selector = SelectorUtils.convertToPlaywrightSelector(by);
-        return new PlaywrightWebElement(this, page.locator(selector));
+        return new PlaywrightWebElement(this, page.locator(selector), selector);
     }
 
     /**
