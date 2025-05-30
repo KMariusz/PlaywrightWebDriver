@@ -16,6 +16,7 @@ import org.openqa.selenium.remote.RemoteWebElement;
 
 import com.microsoft.playwright.Locator;
 
+import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
@@ -34,12 +35,16 @@ public class PlaywrightWebElement extends RemoteWebElement {
     
     /** The Playwright Locator that represents this element */
     private final Locator locator;
+
+    private final String selector;
     
     /** Unique identifier for this element */
     private final String playwrightElementId = UUID.randomUUID().toString();
 
     /**
      * Returns the unique identifier for this element.
+     * 
+     * @return A UUID string that uniquely identifies this element instance
      */
     @Override
     public String getId() {
@@ -56,6 +61,8 @@ public class PlaywrightWebElement extends RemoteWebElement {
 
     /**
      * Submits a form if this element is within a form.
+     * This will find the enclosing form element and trigger its submit action.
+     * If the element is not within a form, this method will have no effect.
      */
     @Override
     public void submit() {
@@ -64,12 +71,17 @@ public class PlaywrightWebElement extends RemoteWebElement {
 
     /**
      * Simulates typing into the element.
-     *
-     * @param keysToSend character sequence to send to the element
+     * This method will first clear any existing content before typing the new text.
+     * 
+     * @param keysToSend Character sequence(s) to send to the element
      */
     @Override
     public void sendKeys(CharSequence... keysToSend) {
-        locator.fill(keysToSend[0].toString());
+        StringBuilder textToType = new StringBuilder();
+        for (CharSequence keys : keysToSend) {
+            textToType.append(keys);
+        }
+        locator.fill(textToType.toString());
     }
 
     /**
@@ -143,7 +155,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
         return locator.locator(selector)
                 .all()
                 .stream()
-                .map(l -> new PlaywrightWebElement(driver, l))
+                .map(l -> new PlaywrightWebElement(driver, l, selector))
                 .collect(Collectors.toList());
     }
 
@@ -156,7 +168,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
     @Override
     public WebElement findElement(By by) {
         String selector = SelectorUtils.convertToPlaywrightSelector(by);
-        return new PlaywrightWebElement(driver, locator.locator(selector));
+        return new PlaywrightWebElement(driver, locator.locator(selector), selector);
     }
 
     /**
