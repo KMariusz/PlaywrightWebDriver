@@ -1,27 +1,33 @@
 package io.github.kmariusz.playwrightwebdriver;
 
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Frame;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
+import io.github.kmariusz.playwrightwebdriver.config.PlaywrightWebDriverOptions;
+import io.github.kmariusz.playwrightwebdriver.util.JavaScriptUtils;
+import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
+import org.openqa.selenium.Alert;
+import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchFrameException;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.WindowType;
+import org.openqa.selenium.bidi.BiDi;
+import org.openqa.selenium.bidi.HasBiDi;
+import org.openqa.selenium.remote.RemoteWebDriver;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import org.openqa.selenium.By;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.WebDriverException;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.remote.RemoteWebDriver;
-
-import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Playwright;
-
-import io.github.kmariusz.playwrightwebdriver.config.PlaywrightWebDriverOptions;
-import io.github.kmariusz.playwrightwebdriver.util.JavaScriptUtils;
-import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
 
 /**
  * A Selenium WebDriver implementation that uses Playwright as the underlying automation engine.
@@ -31,28 +37,41 @@ import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
  * compatibility with the Selenium WebDriver interface. This allows existing Selenium-based test
  * suites to leverage Playwright's performance and reliability advantages with minimal code changes.
  * <p>
- * Note that some advanced Playwright features may not be directly accessible through the standard 
- * WebDriver interfaces. For these cases, use the {@link #getPlaywrightPage()} and 
+ * Note that some advanced Playwright features may not be directly accessible through the standard
+ * WebDriver interfaces. For these cases, use the {@link #getPlaywrightPage()} and
  * {@link #getPlaywrightContext()} methods to access the native Playwright objects.
  */
-public class PlaywrightWebDriver extends RemoteWebDriver {
-    /** The Playwright instance used for browser automation. */
+public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
+    /**
+     * The Playwright instance used for browser automation.
+     */
     private final Playwright playwright;
-    
-    /** The Browser instance representing the automated browser. */
+
+    /**
+     * The Browser instance representing the automated browser.
+     */
     private final Browser browser;
-    
-    /** The BrowserContext instance representing an isolated browser session. */
+
+    /**
+     * The BrowserContext instance representing an isolated browser session.
+     */
     private final BrowserContext context;
-    
-    /** The Page instance representing a single tab or window within the browser. */
-    private final Page page;
-    
-    /** Map of window handles (UUIDs) to their URLs, for multi-window session management. */
-    private final Map<String, String> windowHandles = new HashMap<>();
-    
-    /** The identifier for the currently active window handle. */
-    private String currentWindowHandle;
+
+    /**
+     * A map of window handles to their corresponding Page instances.
+     * This allows tracking multiple windows/tabs opened during the session.
+     */
+    private final Map<String, Page> windowHandles = new HashMap<>();
+    /**
+     * The Page instance representing a single tab or window within the browser.
+     */
+    private Page page;
+
+    /**
+     * The current frame in focus for WebDriver operations.
+     * This helps track which frame should be used for element finding and other operations.
+     */
+    private Frame frame;
 
     /**
      * Creates a new PlaywrightWebDriver instance with default options.
@@ -66,7 +85,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      *
      * @param options the configuration options for this WebDriver instance, or null for default options
      * @throws IllegalArgumentException if an unsupported browser type is specified in the options
-     * @throws RuntimeException if there's a failure initializing Playwright components
+     * @throws RuntimeException         if there's a failure initializing Playwright components
      */
     public PlaywrightWebDriver(PlaywrightWebDriverOptions options) {
         if (options == null) {
@@ -77,20 +96,8 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
         this.browser = createBrowser(options);
         this.context = browser.newContext(options.getContextOptions());
         this.page = context.newPage();
-        this.currentWindowHandle = UUID.randomUUID().toString();
-
-        // Initialize window handles map with the initial page
-        if (page != null && page.context() != null && page.context().browser() != null) {
-            List<BrowserContext> contexts = page.context().browser().contexts();
-            if (contexts != null && !contexts.isEmpty()) {
-                List<Page> pages = contexts.get(0).pages();
-                if (pages != null && !pages.isEmpty()) {
-                    this.windowHandles.put(currentWindowHandle, pages.get(0).url());
-                    return;
-                }
-            }
-        }
-        this.windowHandles.put(currentWindowHandle, "");
+        this.windowHandles.put(UUID.randomUUID().toString(), page);
+        setFrame(page.mainFrame());
     }
 
     /**
@@ -111,6 +118,18 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
             default:
                 throw new IllegalArgumentException("Unsupported browser type: " + options.getBrowserType());
         }
+    }
+
+    /**
+     * Sets the current frame for WebDriver operations and waits for it to load.
+     *
+     * @param frame the Playwright Frame to set as current
+     * @return this WebDriver instance for method chaining
+     */
+    private WebDriver setFrame(Frame frame) {
+        this.frame = frame;
+        this.frame.waitForLoadState();
+        return this;
     }
 
     /**
@@ -153,10 +172,10 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
     @Override
     public List<WebElement> findElements(By by) {
         String selector = SelectorUtils.convertToPlaywrightSelector(by);
-        return page.locator(selector)
+        return frame.locator(selector)
                 .all()
                 .stream()
-                .map(locator -> new PlaywrightWebElement(this, locator, selector))
+                .map(locator -> new PlaywrightWebElement(this, locator))
                 .collect(Collectors.toList());
     }
 
@@ -171,7 +190,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
     @Override
     public WebElement findElement(By by) {
         String selector = SelectorUtils.convertToPlaywrightSelector(by);
-        return new PlaywrightWebElement(this, page.locator(selector), selector);
+        return new PlaywrightWebElement(this, frame.locator(selector));
     }
 
     /**
@@ -181,7 +200,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      */
     @Override
     public String getPageSource() {
-        return page.content();
+        return frame.content();
     }
 
     /**
@@ -220,6 +239,14 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      */
     @Override
     public Set<String> getWindowHandles() {
+        List<Page> pages = context.pages();
+        windowHandles.entrySet().removeIf(entry -> !pages.contains(entry.getValue()));
+        pages.forEach(p -> {
+                    if (!windowHandles.containsValue(p)) {
+                        windowHandles.put(UUID.randomUUID().toString(), p);
+                    }
+                }
+        );
         return new HashSet<>(windowHandles.keySet());
     }
 
@@ -230,14 +257,53 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      */
     @Override
     public String getWindowHandle() {
-        return currentWindowHandle;
+        return windowHandles.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(page))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow(() -> new WebDriverException("Current page not found in window handles map"));
+    }
+
+    /**
+     * Returns a TargetLocator instance that can be used to switch to a different frame, window,
+     * or handle alerts within the browser.
+     *
+     * @return a TargetLocator implementation for Playwright
+     */
+    @Override
+    public TargetLocator switchTo() {
+        return new PlaywrightTargetLocator();
+    }
+
+    /**
+     * Returns a Navigation instance that allows controlling browser navigation
+     * (back, forward, refresh, etc.).
+     *
+     * @return a Navigation implementation for Playwright
+     */
+    @Override
+    public Navigation navigate() {
+        // return new PlaywrightNavigation();
+        throw new UnsupportedOperationException("Navigation is not yet implemented in PlaywrightWebDriver.");
+    }
+
+    /**
+     * Returns an Options instance that provides access to browser-specific capabilities
+     * such as cookies, timeouts, and window settings.
+     *
+     * @return an Options implementation for Playwright
+     */
+    @Override
+    public Options manage() {
+        //return new PlaywrightOptions();
+        throw new UnsupportedOperationException("Options management is not yet implemented in PlaywrightWebDriver.");
     }
 
     /**
      * Executes JavaScript code in the context of the current page.
      *
      * @param script the JavaScript code to execute
-     * @param args the arguments to pass to the script
+     * @param args   the arguments to pass to the script
      * @return the value returned by the script, or null if the script returns undefined
      */
     @Override
@@ -250,7 +316,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      * The script is wrapped in a Promise-based function to handle async execution.
      *
      * @param script the JavaScript code to execute asynchronously
-     * @param args the arguments to pass to the script
+     * @param args   the arguments to pass to the script
      * @return the value returned by the script when the Promise resolves
      */
     @Override
@@ -262,7 +328,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      * Takes a screenshot of the current page.
      *
      * @param target the output type for the screenshot
-     * @param <X> the return type of the screenshot output
+     * @param <X>    the return type of the screenshot output
      * @return the screenshot as the specified output type
      * @throws WebDriverException if the screenshot could not be taken or processed
      */
@@ -291,5 +357,147 @@ public class PlaywrightWebDriver extends RemoteWebDriver {
      */
     public BrowserContext getPlaywrightContext() {
         return context;
+    }
+
+    /**
+     * Returns an empty {@link Optional} for BiDi, as PlaywrightWebDriver does not yet support the WebDriver BiDi protocol.
+     *
+     * @return an empty {@link Optional} for BiDi
+     */
+    @Override
+    public Optional<BiDi> maybeGetBiDi() {
+        return Optional.empty();
+    }
+
+    /**
+     * Implementation of WebDriver.TargetLocator for Playwright.
+     * This class handles switching between frames, windows, and alert handling.
+     */
+    private class PlaywrightTargetLocator implements TargetLocator {
+        /**
+         * Switches the focus to a frame by its index in the page's frames list.
+         *
+         * @param index the zero-based index of the frame to switch to
+         * @return the WebDriver focused on the specified frame
+         * @throws org.openqa.selenium.NoSuchFrameException if the frame cannot be found at the specified index
+         */
+        @Override
+        public WebDriver frame(int index) {
+            List<Frame> frames = page.frames();
+            if (index < 0 || index >= frames.size()) {
+                throw new NoSuchFrameException("No frame found with index: " + index);
+            }
+            return setFrame(frames.get(index));
+        }
+
+        /**
+         * Switches the focus to a frame by its name or ID attribute.
+         *
+         * @param nameOrId the name or ID attribute of the frame to switch to
+         * @return the WebDriver focused on the specified frame
+         */
+        @Override
+        public WebDriver frame(String nameOrId) {
+            List<Frame> frames = page.frames();
+            Optional<Frame> targetFrame = frames.stream()
+                    .filter(frame -> nameOrId.equals(frame.name()) || nameOrId.equals(frame.frameElement().getAttribute("id")))
+                    .findFirst();
+            if (targetFrame.isEmpty()) {
+                throw new NoSuchFrameException("No frame found with name or ID: " + nameOrId);
+            }
+            return setFrame(targetFrame.get());
+        }
+
+        /**
+         * Switches the focus to a frame using a WebElement that references the frame.
+         *
+         * @param frameElement the WebElement representing the frame to switch to
+         * @return the WebDriver focused on the specified frame
+         * @throws WebDriverException if the frame cannot be found or switched to,
+         *                            or if the element is not a PlaywrightWebElement
+         */
+        @Override
+        public WebDriver frame(WebElement frameElement) {
+            if (frameElement instanceof PlaywrightWebElement) {
+                PlaywrightWebElement element = (PlaywrightWebElement) frameElement;
+                return setFrame(element.locator().elementHandle().contentFrame());
+            }
+
+            throw new WebDriverException("The provided WebElement is not a PlaywrightWebElement or does not reference a frame.");
+        }
+
+        /**
+         * Switches the focus back to the parent frame.
+         *
+         * @return the WebDriver focused on the parent frame
+         */
+        @Override
+        public WebDriver parentFrame() {
+            return setFrame(frame.parentFrame());
+        }
+
+        /**
+         * Switches the focus to a window identified by nameOrHandle.
+         *
+         * @param nameOrHandle the name of the window or the handle as returned by getWindowHandle
+         * @return the WebDriver focused on the specified window
+         */
+        @Override
+        public WebDriver window(String nameOrHandle) {
+            if (windowHandles.containsKey(nameOrHandle)) {
+                page = windowHandles.get(nameOrHandle);
+                frame = page.mainFrame();
+            } else {
+                throw new WebDriverException("No window found with handle: " + nameOrHandle);
+            }
+            return PlaywrightWebDriver.this;
+        }
+
+        /**
+         * Creates a new window or tab and switches to it.
+         *
+         * @param typeHint indicates whether to open a new window or a new tab
+         * @return the WebDriver focused on the new window or tab
+         */
+        @Override
+        public WebDriver newWindow(WindowType typeHint) {
+            String newWindowHandle = UUID.randomUUID().toString();
+            windowHandles.put(newWindowHandle, context.newPage());
+            return window(newWindowHandle);
+        }
+
+        /**
+         * Switches focus to the default content (top-level frame).
+         *
+         * @return the WebDriver focused on the default content
+         */
+        @Override
+        public WebDriver defaultContent() {
+            return setFrame(page.mainFrame());
+        }
+
+        /**
+         * Returns an Alert instance that allows interacting with Javascript dialogs.
+         *
+         * @return an Alert implementation for Playwright
+         */
+        @Override
+        public Alert alert() {
+            //return new PlaywrightAlert();
+            throw new UnsupportedOperationException("Alert handling is not yet implemented in PlaywrightWebDriver.");
+        }
+
+        /**
+         * Gets the currently focused element on the page.
+         *
+         * @return the currently focused WebElement
+         */
+        @Override
+        public WebElement activeElement() {
+            // Get the currently focused element
+            String script = "return document.activeElement";
+            return new PlaywrightWebElement(PlaywrightWebDriver.this,
+                    page.locator("*:focus"));
+        }
     }
 }

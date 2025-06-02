@@ -1,25 +1,28 @@
 package io.github.kmariusz.playwrightwebdriver;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
+import com.microsoft.playwright.Locator;
+import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.Rectangle;
+import org.openqa.selenium.SearchContext;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.WrapsDriver;
 import org.openqa.selenium.interactions.Coordinates;
+import org.openqa.selenium.interactions.Locatable;
 import org.openqa.selenium.remote.RemoteWebElement;
 
-import com.microsoft.playwright.Locator;
-
-import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.Accessors;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of Selenium's WebElement interface using Playwright.
@@ -29,21 +32,25 @@ import lombok.experimental.Accessors;
 @Getter
 @RequiredArgsConstructor
 @Accessors(fluent = true)
-public class PlaywrightWebElement extends RemoteWebElement {
-    /** The Playwright WebDriver instance that created this element */
+public class PlaywrightWebElement extends RemoteWebElement implements WebElement, Locatable, TakesScreenshot, WrapsDriver {
+    /**
+     * The Playwright WebDriver instance that created this element
+     */
     private final PlaywrightWebDriver driver;
-    
-    /** The Playwright Locator that represents this element */
+
+    /**
+     * The Playwright Locator that represents this element
+     */
     private final Locator locator;
 
-    private final String selector;
-    
-    /** Unique identifier for this element */
+    /**
+     * Unique identifier for this element
+     */
     private final String playwrightElementId = UUID.randomUUID().toString();
 
     /**
      * Returns the unique identifier for this element.
-     * 
+     *
      * @return A UUID string that uniquely identifies this element instance
      */
     @Override
@@ -72,7 +79,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
     /**
      * Simulates typing into the element.
      * This method will first clear any existing content before typing the new text.
-     * 
+     *
      * @param keysToSend Character sequence(s) to send to the element
      */
     @Override
@@ -155,7 +162,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
         return locator.locator(selector)
                 .all()
                 .stream()
-                .map(l -> new PlaywrightWebElement(driver, l, selector))
+                .map(l -> new PlaywrightWebElement(driver, l))
                 .collect(Collectors.toList());
     }
 
@@ -168,7 +175,18 @@ public class PlaywrightWebElement extends RemoteWebElement {
     @Override
     public WebElement findElement(By by) {
         String selector = SelectorUtils.convertToPlaywrightSelector(by);
-        return new PlaywrightWebElement(driver, locator.locator(selector), selector);
+        return new PlaywrightWebElement(driver, locator.locator(selector));
+    }
+
+    /**
+     * Returns the shadow DOM root of this element if the element has an open shadow root.
+     * This allows querying elements in the shadow DOM of this element.
+     *
+     * @return A SearchContext representing the shadow root that can be used to find elements within the shadow DOM
+     */
+    @Override
+    public SearchContext getShadowRoot() {
+        return this;
     }
 
     /**
@@ -242,7 +260,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
     /**
      * Takes a screenshot of this element.
      *
-     * @param <X> Return type of the screenshot output
+     * @param <X>    Return type of the screenshot output
      * @param target Target output type
      * @return The screenshot as the specified output type
      * @throws WebDriverException When the operation fails
@@ -286,7 +304,7 @@ public class PlaywrightWebElement extends RemoteWebElement {
 
     /**
      * Sets the parent driver for this element.
-     * This method is not part of the WebElement interface but is required by 
+     * This method is not part of the WebElement interface but is required by
      * RemoteWebElement in newer Selenium versions.
      *
      * @param parent The parent RemoteWebDriver instance
@@ -304,5 +322,15 @@ public class PlaywrightWebElement extends RemoteWebElement {
     @Override
     public String toString() {
         return String.format("PlaywrightWebElement: %s", locator);
+    }
+
+    /**
+     * Gets the WebDriver instance that controls this element.
+     *
+     * @return The WebDriver instance associated with this element
+     */
+    @Override
+    public WebDriver getWrappedDriver() {
+        return driver;
     }
 }

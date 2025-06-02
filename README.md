@@ -9,7 +9,7 @@ Playwright's powerful automation capabilities.
 
 ## Table of Contents
 - [Features](#features)
-- [Known Bugs](#known-bugs)
+- [Limitations](#limitations)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -31,14 +31,26 @@ It is not comparable to full project migration from Selenium to Playwright. It i
 - Screenshot support
 - Asynchronous JavaScript execution
 
-## Known Bugs
+## Limitations
+
+Selenium and Playwright differ in some aspects so much that it is not possible to support all possible use cases.<br>
+Some of such cases are listed below.
+
+### Alerts Handling
+
+Main difference in alerts handling between Selenium and Playwright is timing model. In Selenium it is synchronous - interaction is done after alert appears.
+In Playwright it is asynchronous - handler is pre-registered before dialog appears. It means that such cases will not work properly by simple WebDriver replacement.
 
 ### JavaScript Code Execution
 
 JavaScript code in Selenium executed using [JavascriptExecutor](https://www.selenium.dev/selenium/docs/api/java/org/openqa/selenium/JavascriptExecutor.html) behaves differently than in Playwright's [evaluation](https://playwright.dev/docs/evaluating).
 
-The current implementation may not work properly with all types of JavaScript execution.
-It has been tested on various examples. However, please report any [issues](https://github.com/KMariusz/PlaywrightWebDriver/issues) you encounter.
+The current implementation has been tested with various examples, but it may still not work correctly with some JavaScript scripts.<br>
+Please report any [issues](https://github.com/KMariusz/PlaywrightWebDriver/issues) you encounter.
+
+### WebDriver BiDi
+PlaywrightWebDriver does not support WebDriver BiDi protocol. It is a work in progress and will be implemented in the future.
+Current status can be tracked [here](https://github.com/microsoft/playwright/issues/32577)
 
 ### Issues
 
