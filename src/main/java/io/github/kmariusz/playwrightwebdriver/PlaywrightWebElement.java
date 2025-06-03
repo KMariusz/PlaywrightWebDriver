@@ -1,10 +1,9 @@
 package io.github.kmariusz.playwrightwebdriver;
 
-import com.microsoft.playwright.Locator;
-import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.Accessors;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
@@ -21,9 +20,12 @@ import org.openqa.selenium.interactions.Coordinates;
 import org.openqa.selenium.interactions.Locatable;
 import org.openqa.selenium.remote.RemoteWebElement;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import com.microsoft.playwright.Locator;
+
+import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
 
 /**
  * Implementation of Selenium's WebElement interface using Playwright.
@@ -54,13 +56,24 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
      *
      * @param arg the argument to check
      * @return true if the argument is or wraps a PlaywrightWebElement, false otherwise
-     */
-    public static boolean instanceOf(Object arg) {
+     */    public static boolean instanceOf(Object arg) {
         return arg instanceof PlaywrightWebElement ||
                 (arg instanceof WrapsElement &&
                         ((WrapsElement) arg).getWrappedElement() instanceof PlaywrightWebElement);
     }
 
+    /**
+     * Extracts a PlaywrightWebElement from the given object.
+     * <p>
+     * This method unwraps any WrapsElement implementations to access the underlying
+     * PlaywrightWebElement. This is useful when working with decorated WebElements
+     * or elements wrapped by frameworks or test tools.
+     * </p>
+     *
+     * @param arg the object that is or wraps a PlaywrightWebElement
+     * @return the PlaywrightWebElement extracted from the argument
+     * @throws IllegalArgumentException if the argument is not a PlaywrightWebElement or does not wrap one
+     */
     public static PlaywrightWebElement from(Object arg) {
         if (arg instanceof PlaywrightWebElement) {
             return (PlaywrightWebElement) arg;
