@@ -149,6 +149,12 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         return this;
     }
 
+    /**
+     * Sets the current page for WebDriver operations and brings it to the front.
+     *
+     * @param page the Playwright Page to set as current
+     * @return this WebDriver instance for method chaining
+     */
     private WebDriver setPage(Page page) {
         this.page = page;
         page.bringToFront();
@@ -156,6 +162,11 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         return setFrame(page.mainFrame());
     }
 
+    /**
+     * Configures console message listeners for all open pages and cleans up listeners for closed pages.
+     * This method ensures that console messages from all pages are captured and stored for retrieval
+     * through the Selenium logging API.
+     */
     private void setPageOnConsoleMessage() {
         updateWindowHandles();
         this.consoleMessages.entrySet().removeIf(entry -> !windowHandles.containsKey(entry.getKey()));
@@ -174,6 +185,14 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         }
     }
 
+    /**
+     * Maps a Playwright ConsoleMessage to a Selenium LogEntry.
+     * This method converts Playwright-specific console messages to Selenium's logging format,
+     * handling the conversion of message type to appropriate log levels.
+     *
+     * @param consoleMessage the Playwright console message to map
+     * @return a Selenium LogEntry containing the mapped message information
+     */
     private LogEntry mapConsoleMessage(ConsoleMessage consoleMessage) {
         Level level = Level.INFO;
         try {
@@ -295,9 +314,15 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         }
     }
 
+    /**
+     * Updates the internal map of window handles to Playwright Page objects.
+     * This method ensures that the driver keeps track of all open pages/windows,
+     * removing closed ones and adding newly opened ones to the window handles map.
+     * Each page is assigned a unique UUID as its window handle.
+     */
     private void updateWindowHandles() {
         // Interact with Playwright to refresh pages list
-        String tmp = page.title();
+        page.title(); // This call ensures the page is interacted with to refresh the pages list
         List<Page> pages = context.pages();
         windowHandles.entrySet().removeIf(entry -> !pages.contains(entry.getValue()));
         pages.forEach(p -> {
@@ -759,7 +784,16 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         }
     }
 
+    /**
+     * Implementation of WebDriver.Logs for Playwright.
+     * Provides access to browser console logs captured during test execution.
+     */
     private class PlaywrightLogs implements Logs {
+        /**
+         * Gets all console messages captured for the current window/page.
+         *
+         * @return a list of LogEntry objects representing console messages
+         */
         private List<LogEntry> getMessages() {
             setPageOnConsoleMessage();
             return consoleMessages.getOrDefault(getWindowHandle(), new ArrayList<>());
