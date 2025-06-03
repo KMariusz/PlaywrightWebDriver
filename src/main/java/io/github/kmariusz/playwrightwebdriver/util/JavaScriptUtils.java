@@ -4,7 +4,6 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import io.github.kmariusz.playwrightwebdriver.PlaywrightWebElement;
 import lombok.experimental.UtilityClass;
-import org.openqa.selenium.WrapsElement;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -89,12 +88,7 @@ public class JavaScriptUtils {
                 .boxed()
                 .collect(Collectors.toMap(
                         i -> i,
-                        i -> {
-                            Object arg = args[i];
-                            return arg instanceof WrapsElement ?
-                                    (PlaywrightWebElement) ((WrapsElement) arg).getWrappedElement() :
-                                    (PlaywrightWebElement) arg;
-                        }
+                        i -> PlaywrightWebElement.from(args[i])
                 ));
     }
 

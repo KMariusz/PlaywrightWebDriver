@@ -3,6 +3,7 @@ package io.github.kmariusz.playwrightwebdriver;
 import com.google.common.net.InternetDomainName;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.ConsoleMessage;
 import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
@@ -22,12 +23,15 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.WindowType;
 import org.openqa.selenium.bidi.BiDi;
 import org.openqa.selenium.bidi.HasBiDi;
+import org.openqa.selenium.logging.LogEntries;
+import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.Logs;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -37,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -72,6 +77,10 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      * This allows tracking multiple windows/tabs opened during the session.
      */
     private final Map<String, Page> windowHandles = new LinkedHashMap<>();
+
+
+    private final Map<String, List<LogEntry>> consoleMessages = new LinkedHashMap<>();
+
     /**
      * The Page instance representing a single tab or window within the browser.
      */
@@ -105,9 +114,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         this.playwright = Playwright.create(options.getCreateOptions());
         this.browser = createBrowser(options);
         this.context = browser.newContext(options.getContextOptions());
-        this.page = context.newPage();
-        this.windowHandles.put(UUID.randomUUID().toString(), page);
-        setFrame(page.mainFrame());
+        setPage(context.newPage());
     }
 
     /**
@@ -140,6 +147,41 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         this.frame = frame;
         this.frame.waitForLoadState();
         return this;
+    }
+
+    private WebDriver setPage(Page page) {
+        this.page = page;
+        page.bringToFront();
+        setPageOnConsoleMessage();
+        return setFrame(page.mainFrame());
+    }
+
+    private void setPageOnConsoleMessage() {
+        updateWindowHandles();
+        this.consoleMessages.entrySet().removeIf(entry -> !windowHandles.containsKey(entry.getKey()));
+
+        for (Map.Entry<String, Page> entry : this.windowHandles.entrySet()) {
+            String handle = entry.getKey();
+            if (!this.consoleMessages.containsKey(handle)) {
+                Page page = entry.getValue();
+                page.onConsoleMessage(consoleMessage -> {
+                    // Store console messages in a map with a unique identifier
+                    List<LogEntry> consoleMessages = this.consoleMessages.getOrDefault(handle, new ArrayList<>());
+                    consoleMessages.add(mapConsoleMessage(consoleMessage));
+                    this.consoleMessages.put(handle, consoleMessages);
+                });
+            }
+        }
+    }
+
+    private LogEntry mapConsoleMessage(ConsoleMessage consoleMessage) {
+        Level level = Level.INFO;
+        try {
+            level = Level.parse(consoleMessage.type().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            System.err.println("Playwright console message type: " + consoleMessage.type() + " mapped to INFO level.");
+        }
+        return new LogEntry(level, System.currentTimeMillis(), consoleMessage.text());
     }
 
     /**
@@ -253,16 +295,9 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         }
     }
 
-    /**
-     * Gets the set of window handles available to the driver.
-     *
-     * @return a set of window handle identifiers for all open windows/tabs
-     */
-    @Override
-    public Set<String> getWindowHandles() {
+    private void updateWindowHandles() {
         // Interact with Playwright to refresh pages list
         String tmp = page.title();
-
         List<Page> pages = context.pages();
         windowHandles.entrySet().removeIf(entry -> !pages.contains(entry.getValue()));
         pages.forEach(p -> {
@@ -271,6 +306,16 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
                     }
                 }
         );
+    }
+
+    /**
+     * Gets the set of window handles available to the driver.
+     *
+     * @return a set of window handle identifiers for all open windows/tabs
+     */
+    @Override
+    public Set<String> getWindowHandles() {
+        updateWindowHandles();
         return new LinkedHashSet<>(windowHandles.keySet());
     }
 
@@ -281,6 +326,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      */
     @Override
     public String getWindowHandle() {
+        updateWindowHandles();
         return windowHandles.entrySet().stream()
                 .filter(entry -> entry.getValue().equals(page))
                 .map(Map.Entry::getKey)
@@ -422,7 +468,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         public WebDriver frame(String nameOrId) {
             List<Frame> frames = page.frames();
             Optional<Frame> targetFrame = frames.stream()
-                    .filter(frame -> nameOrId.equals(frame.name()) || nameOrId.equals(frame.frameElement().getAttribute("id")))
+                    .filter(frame -> nameOrId.equals(frame.name()))
                     .findFirst();
             if (targetFrame.isEmpty()) {
                 throw new NoSuchFrameException("No frame found with name or ID: " + nameOrId);
@@ -441,7 +487,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         @Override
         public WebDriver frame(WebElement frameElement) {
             if (PlaywrightWebElement.instanceOf(frameElement)) {
-                PlaywrightWebElement element = (PlaywrightWebElement) frameElement;
+                PlaywrightWebElement element = PlaywrightWebElement.from(frameElement);
                 return setFrame(element.locator().elementHandle().contentFrame());
             }
 
@@ -467,10 +513,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         @Override
         public WebDriver window(String nameOrHandle) {
             if (windowHandles.containsKey(nameOrHandle)) {
-                page = windowHandles.get(nameOrHandle);
-                page.bringToFront();
-                frame = page.mainFrame();
-                return PlaywrightWebDriver.this;
+                return setPage(windowHandles.get(nameOrHandle));
             }
             throw new WebDriverException("No window found with handle: " + nameOrHandle);
         }
@@ -483,9 +526,8 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
          */
         @Override
         public WebDriver newWindow(WindowType typeHint) {
-            String newWindowHandle = UUID.randomUUID().toString();
-            windowHandles.put(newWindowHandle, context.newPage());
-            return window(newWindowHandle);
+            setPage(context.newPage());
+            return window(getWindowHandle());
         }
 
         /**
@@ -646,8 +688,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
 
         @Override
         public Logs logs() {
-            // Not fully implemented in this adapter
-            throw new UnsupportedOperationException("Logs functionality is not implemented");
+            return new PlaywrightLogs();
         }
 
         /**
@@ -679,6 +720,12 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      */
     private class PlaywrightWindow implements Window {
         @Override
+        public Dimension getSize() {
+            com.microsoft.playwright.options.ViewportSize size = page.viewportSize();
+            return new Dimension(size.width, size.height);
+        }
+
+        @Override
         public void setSize(Dimension targetSize) {
             if (targetSize.getWidth() <= 0 || targetSize.getHeight() <= 0) {
                 throw new IllegalArgumentException("Window size must be positive: " + targetSize);
@@ -687,19 +734,13 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         }
 
         @Override
-        public Dimension getSize() {
-            com.microsoft.playwright.options.ViewportSize size = page.viewportSize();
-            return new Dimension(size.width, size.height);
+        public Point getPosition() {
+            throw new UnsupportedOperationException("Getting window position is not supported in Playwright.");
         }
 
         @Override
         public void setPosition(Point targetPosition) {
             throw new UnsupportedOperationException("Setting window position is not supported in Playwright.");
-        }
-
-        @Override
-        public Point getPosition() {
-            throw new UnsupportedOperationException("Getting window position is not supported in Playwright.");
         }
 
         @Override
@@ -715,6 +756,27 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         @Override
         public void fullscreen() {
             throw new UnsupportedOperationException("Fullscreen mode is not supported in Playwright.");
+        }
+    }
+
+    private class PlaywrightLogs implements Logs {
+        private List<LogEntry> getMessages() {
+            setPageOnConsoleMessage();
+            return consoleMessages.getOrDefault(getWindowHandle(), new ArrayList<>());
+        }
+
+        @Override
+        public LogEntries get(String logType) {
+            return new LogEntries(getMessages());
+        }
+
+        @Override
+        public Set<String> getAvailableLogTypes() {
+            List<LogEntry> messages = getMessages();
+            return messages.stream()
+                    .map(LogEntry::getLevel)
+                    .map(Level::toString)
+                    .collect(Collectors.toSet());
         }
     }
 }

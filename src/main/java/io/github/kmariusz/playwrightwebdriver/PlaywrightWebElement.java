@@ -61,6 +61,18 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
                         ((WrapsElement) arg).getWrappedElement() instanceof PlaywrightWebElement);
     }
 
+    public static PlaywrightWebElement from(Object arg) {
+        if (arg instanceof PlaywrightWebElement) {
+            return (PlaywrightWebElement) arg;
+        } else if (arg instanceof WrapsElement) {
+            WebElement wrapped = ((WrapsElement) arg).getWrappedElement();
+            if (wrapped instanceof PlaywrightWebElement) {
+                return (PlaywrightWebElement) wrapped;
+            }
+        }
+        throw new IllegalArgumentException("Argument is not a PlaywrightWebElement or does not wrap one.");
+    }
+
     /**
      * Returns the unique identifier for this element.
      *
