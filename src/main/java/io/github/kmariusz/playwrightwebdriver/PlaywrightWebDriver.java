@@ -74,10 +74,9 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
 
     /**
      * A map of window handles to their corresponding Page instances.
-     * This allows tracking multiple windows/tabs opened during the session.
+     * This allows tracking of multiple windows/tabs opened during the session.
      */
     private final Map<String, Page> windowHandles = new LinkedHashMap<>();
-
 
     private final Map<String, List<LogEntry>> consoleMessages = new LinkedHashMap<>();
 
@@ -706,11 +705,26 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
             throw new UnsupportedOperationException("Timeouts functionality is not implemented");
         }
 
+        /**
+         * Returns the options for managing the current window.
+         * <p>
+         * The window options allow for controlling window size and position.
+         *
+         * @return a {@link Window} object for controlling the browser window
+         */
         @Override
         public Window window() {
             return new PlaywrightWindow();
         }
 
+        /**
+         * Returns the interface for managing driver logs.
+         * <p>
+         * This implementation provides access to console messages captured during
+         * test execution.
+         *
+         * @return a {@link Logs} object to access browser console logs
+         */
         @Override
         public Logs logs() {
             return new PlaywrightLogs();
@@ -799,11 +813,27 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
             return consoleMessages.getOrDefault(getWindowHandle(), new ArrayList<>());
         }
 
+        /**
+         * Gets all log entries for the specified log type.
+         * <p>
+         * Currently, this implementation returns all console messages regardless of the
+         * requested log type.
+         *
+         * @param logType the type of logs to retrieve
+         * @return a LogEntries object containing all console messages
+         */
         @Override
         public LogEntries get(String logType) {
             return new LogEntries(getMessages());
         }
 
+        /**
+         * Gets the set of log types available from this driver.
+         * <p>
+         * Returns a set of log levels from captured console messages, represented as strings.
+         *
+         * @return a set of available log types
+         */
         @Override
         public Set<String> getAvailableLogTypes() {
             List<LogEntry> messages = getMessages();

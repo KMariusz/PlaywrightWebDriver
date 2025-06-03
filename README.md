@@ -44,10 +44,16 @@ It means that such cases will not work properly by simple WebDriver replacement.
 
 ### Window Management
 
-In Selenium there are methods which allow to resize and move browser window, such as 'driver.manage().window().maximize()' or 'driver.manage().window().setPosition()'.<br>
+In Selenium there are methods which allow to resize and move browser window, such as `driver.manage().window().maximize()` or `driver.manage().window().setPosition()`.<br>
 In Playwright, there is no such functionality. Browser window cannot be resized or moved on runtime.<br>
 This means that such methods will not work properly by simple WebDriver replacement.<br>
-Methods 'setSize()' and 'getSize()' are supported by PlaywrightWebDriver, but they will not change the browser window size, only the Playwright page viewport size.
+Methods `setSize()` and `getSize()` are supported by PlaywrightWebDriver, but they will not change the browser window size, only the Playwright page viewport size.
+
+### Logs
+Playwright does not support browser logs in the same way as Selenium does.<br>
+In Selenium, you can retrieve different types of logs (browser, driver, performance) using `driver.manage().logs()`.<br>
+Playwright does not have a direct equivalent for this functionality.<br>
+PlaywrightWebDriver returns [ConsoleMessages](https://playwright.dev/java/docs/api/class-consolemessage) mapped as a list of `org.openqa.selenium.logging.LogEntry` objects, but it does not support other types of logs.<br>
 
 ### JavaScript Code Execution
 
@@ -68,6 +74,7 @@ There may be reported [issues](https://github.com/KMariusz/PlaywrightWebDriver/i
 
 - Java 11 or higher
 - Playwright browsers installed (automatically handled by Playwright)
+- Compatible with Selenium WebDriver 4.x
 
 ## Installation
 
@@ -171,3 +178,7 @@ PlaywrightWebDriver driver = new PlaywrightWebDriver(options);
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For issues, feature requests, or questions, please [create an issue](https://github.com/KMariusz/PlaywrightWebDriver/issues) on GitHub.
