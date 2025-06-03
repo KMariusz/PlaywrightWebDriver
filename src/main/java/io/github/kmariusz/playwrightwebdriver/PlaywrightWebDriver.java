@@ -1,5 +1,6 @@
 package io.github.kmariusz.playwrightwebdriver;
 
+import com.google.common.net.InternetDomainName;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Frame;
@@ -10,17 +11,25 @@ import io.github.kmariusz.playwrightwebdriver.util.JavaScriptUtils;
 import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
 import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Cookie;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.NoSuchFrameException;
 import org.openqa.selenium.OutputType;
+import org.openqa.selenium.Point;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.WindowType;
 import org.openqa.selenium.bidi.BiDi;
 import org.openqa.selenium.bidi.HasBiDi;
+import org.openqa.selenium.logging.Logs;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -309,8 +318,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      */
     @Override
     public Options manage() {
-        //return new PlaywrightOptions();
-        throw new UnsupportedOperationException("Options management is not yet implemented in PlaywrightWebDriver.");
+        return new PlaywrightOptions();
     }
 
     /**
@@ -541,6 +549,172 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         @Override
         public void refresh() {
             page.reload();
+        }
+    }
+
+    /**
+     * Implementation of WebDriver.Options for Playwright.
+     * This class handles browser-level options like cookies, timeouts, and window management.
+     */
+    private class PlaywrightOptions implements Options {
+        @Override
+        public void addCookie(Cookie cookie) {
+            com.microsoft.playwright.options.Cookie playwrightCookie =
+                    new com.microsoft.playwright.options.Cookie(cookie.getName(), cookie.getValue())
+                            .setDomain(cookie.getDomain())
+                            .setPath(cookie.getPath())
+                            .setSecure(cookie.isSecure())
+                            .setHttpOnly(cookie.isHttpOnly())
+                            .setSameSite(convertSameSitePolicy(cookie.getSameSite()));
+            if (cookie.getExpiry() != null) {
+                playwrightCookie
+                        .setExpires(cookie.getExpiry().getTime() / 1000.0);
+            }
+            if (playwrightCookie.domain == null) {
+                String urlString = PlaywrightWebDriver.this.getCurrentUrl();
+                URI uri;
+                try {
+                    uri = new URI(urlString);
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+                String host = uri.getHost();
+                InternetDomainName internetDomainName = InternetDomainName.from(host).topPrivateDomain();
+                String domainName = internetDomainName.toString();
+                playwrightCookie.setDomain(domainName);
+            }
+            context.addCookies(List.of(playwrightCookie));
+        }
+
+        @Override
+        public void deleteCookieNamed(String name) {
+            context.clearCookies(
+                    new BrowserContext.ClearCookiesOptions().setName(name)
+            );
+        }
+
+        @Override
+        public void deleteCookie(Cookie cookie) {
+            deleteCookieNamed(cookie.getName());
+        }
+
+        @Override
+        public void deleteAllCookies() {
+            context.clearCookies();
+        }
+
+        @Override
+        public Set<Cookie> getCookies() {
+            List<com.microsoft.playwright.options.Cookie> playwrightCookies = context.cookies();
+            Set<Cookie> seleniumCookies = new HashSet<>();
+
+            for (com.microsoft.playwright.options.Cookie pwCookie : playwrightCookies) {
+                Cookie.Builder builder = new Cookie.Builder(pwCookie.name, pwCookie.value)
+                        .path(pwCookie.path)
+                        .domain(pwCookie.domain)
+                        .isSecure(pwCookie.secure)
+                        .isHttpOnly(pwCookie.httpOnly);
+
+                if (pwCookie.expires != null) {
+                    builder.expiresOn(new Date((long) (pwCookie.expires * 1000)));
+                }
+
+                seleniumCookies.add(builder.build());
+            }
+
+            return seleniumCookies;
+        }
+
+        @Override
+        public Cookie getCookieNamed(String name) {
+            return getCookies().stream()
+                    .filter(cookie -> name.equals(cookie.getName()))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        @Override
+        public Timeouts timeouts() {
+            //return new PlaywrightTimeouts();
+            throw new UnsupportedOperationException("Timeouts functionality is not implemented");
+        }
+
+        @Override
+        public Window window() {
+            return new PlaywrightWindow();
+        }
+
+        @Override
+        public Logs logs() {
+            // Not fully implemented in this adapter
+            throw new UnsupportedOperationException("Logs functionality is not implemented");
+        }
+
+        /**
+         * Converts a Selenium SameSite cookie policy string to the corresponding Playwright SameSiteAttribute.
+         *
+         * @param sameSite the Selenium SameSite policy string (lax, strict, none, etc.)
+         * @return the corresponding Playwright SameSiteAttribute, or null if the policy is not recognized
+         */
+        private com.microsoft.playwright.options.SameSiteAttribute convertSameSitePolicy(String sameSite) {
+            if (sameSite == null) {
+                return null;
+            }
+
+            switch (sameSite.toLowerCase()) {
+                case "lax":
+                    return com.microsoft.playwright.options.SameSiteAttribute.LAX;
+                case "strict":
+                    return com.microsoft.playwright.options.SameSiteAttribute.STRICT;
+                case "none":
+                    return com.microsoft.playwright.options.SameSiteAttribute.NONE;
+                default:
+                    return null;
+            }
+        }
+    }
+
+    /**
+     * Implementation of WebDriver.Window for Playwright.
+     */
+    private class PlaywrightWindow implements Window {
+        @Override
+        public void setSize(Dimension targetSize) {
+            if (targetSize.getWidth() <= 0 || targetSize.getHeight() <= 0) {
+                throw new IllegalArgumentException("Window size must be positive: " + targetSize);
+            }
+            page.setViewportSize(targetSize.getWidth(), targetSize.getHeight());
+        }
+
+        @Override
+        public Dimension getSize() {
+            com.microsoft.playwright.options.ViewportSize size = page.viewportSize();
+            return new Dimension(size.width, size.height);
+        }
+
+        @Override
+        public void setPosition(Point targetPosition) {
+            throw new UnsupportedOperationException("Setting window position is not supported in Playwright.");
+        }
+
+        @Override
+        public Point getPosition() {
+            throw new UnsupportedOperationException("Getting window position is not supported in Playwright.");
+        }
+
+        @Override
+        public void maximize() {
+            throw new UnsupportedOperationException("Maximizing window is not supported in Playwright.");
+        }
+
+        @Override
+        public void minimize() {
+            throw new UnsupportedOperationException("Minimizing window is not supported in Playwright.");
+        }
+
+        @Override
+        public void fullscreen() {
+            throw new UnsupportedOperationException("Fullscreen mode is not supported in Playwright.");
         }
     }
 }

@@ -38,8 +38,16 @@ Some of such cases are listed below.
 
 ### Alerts Handling
 
-Main difference in alerts handling between Selenium and Playwright is timing model. In Selenium it is synchronous - interaction is done after alert appears.
-In Playwright it is asynchronous - handler is pre-registered before dialog appears. It means that such cases will not work properly by simple WebDriver replacement.
+Main difference in alerts handling between Selenium and Playwright is timing model. In Selenium, it is synchronous - interaction is done after alert appears.<br>
+In Playwright, it is asynchronous - handler is pre-registered before dialog appears.<br>
+It means that such cases will not work properly by simple WebDriver replacement.
+
+### Window Management
+
+In Selenium there are methods which allow to resize and move browser window, such as 'driver.manage().window().maximize()' or 'driver.manage().window().setPosition()'.<br>
+In Playwright, there is no such functionality. Browser window cannot be resized or moved on runtime.<br>
+This means that such methods will not work properly by simple WebDriver replacement.<br>
+Methods 'setSize()' and 'getSize()' are supported by PlaywrightWebDriver, but they will not change the browser window size, only the Playwright page viewport size.
 
 ### JavaScript Code Execution
 
