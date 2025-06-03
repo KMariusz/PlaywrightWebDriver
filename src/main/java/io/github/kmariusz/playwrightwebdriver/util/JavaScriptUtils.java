@@ -78,18 +78,6 @@ public class JavaScriptUtils {
     }
 
     /**
-     * Checks if the argument is a PlaywrightWebElement or wraps one.
-     *
-     * @param arg the argument to check
-     * @return true if the argument is or wraps a PlaywrightWebElement, false otherwise
-     */
-    private static boolean isPlaywrightWebElement(Object arg) {
-        return arg instanceof PlaywrightWebElement ||
-                (arg instanceof WrapsElement &&
-                        ((WrapsElement) arg).getWrappedElement() instanceof PlaywrightWebElement);
-    }
-
-    /**
      * Extracts all PlaywrightWebElement instances from the argument array, mapping their indices.
      *
      * @param args the argument array
@@ -97,7 +85,7 @@ public class JavaScriptUtils {
      */
     private static Map<Integer, PlaywrightWebElement> getPlaywrightWebElements(Object[] args) {
         return IntStream.range(0, args.length)
-                .filter(i -> isPlaywrightWebElement(args[i]))
+                .filter(i -> PlaywrightWebElement.instanceOf(args[i]))
                 .boxed()
                 .collect(Collectors.toMap(
                         i -> i,

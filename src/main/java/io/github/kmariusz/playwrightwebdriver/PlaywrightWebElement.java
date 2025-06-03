@@ -16,6 +16,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.WrapsDriver;
+import org.openqa.selenium.WrapsElement;
 import org.openqa.selenium.interactions.Coordinates;
 import org.openqa.selenium.interactions.Locatable;
 import org.openqa.selenium.remote.RemoteWebElement;
@@ -47,6 +48,18 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
      * Unique identifier for this element
      */
     private final String playwrightElementId = UUID.randomUUID().toString();
+
+    /**
+     * Checks if the argument is a PlaywrightWebElement or wraps one.
+     *
+     * @param arg the argument to check
+     * @return true if the argument is or wraps a PlaywrightWebElement, false otherwise
+     */
+    public static boolean instanceOf(Object arg) {
+        return arg instanceof PlaywrightWebElement ||
+                (arg instanceof WrapsElement &&
+                        ((WrapsElement) arg).getWrappedElement() instanceof PlaywrightWebElement);
+    }
 
     /**
      * Returns the unique identifier for this element.

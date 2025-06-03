@@ -20,8 +20,9 @@ import org.openqa.selenium.bidi.BiDi;
 import org.openqa.selenium.bidi.HasBiDi;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -61,7 +62,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      * A map of window handles to their corresponding Page instances.
      * This allows tracking multiple windows/tabs opened during the session.
      */
-    private final Map<String, Page> windowHandles = new HashMap<>();
+    private final Map<String, Page> windowHandles = new LinkedHashMap<>();
     /**
      * The Page instance representing a single tab or window within the browser.
      */
@@ -204,11 +205,31 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
     }
 
     /**
-     * Closes the current browser session and releases all associated resources.
-     * This method closes the page, context, browser, and playwright instances in sequence.
+     * Closes the current browser window
      */
     @Override
     public void close() {
+        // Close the current page and remove it from the window handles
+        if (page != null) {
+            String handle = getWindowHandle();
+            page.close();
+            windowHandles.remove(handle);
+            // If no pages left, quit the browser
+            if (windowHandles.isEmpty()) {
+                quit();
+            } else {
+                // Switch to another page if available
+                page = context.pages().get(0);
+                setFrame(page.mainFrame());
+            }
+        }
+    }
+
+    /**
+     * Quits the driver, closing all associated windows/tabs and releasing resources.
+     */
+    @Override
+    public void quit() {
         if (page != null) {
             page.close();
         }
@@ -224,21 +245,15 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
     }
 
     /**
-     * Quits the driver, closing all associated windows/tabs and releasing resources.
-     * This is equivalent to calling {@link #close()} in this implementation.
-     */
-    @Override
-    public void quit() {
-        close();
-    }
-
-    /**
      * Gets the set of window handles available to the driver.
      *
      * @return a set of window handle identifiers for all open windows/tabs
      */
     @Override
     public Set<String> getWindowHandles() {
+        // Interact with Playwright to refresh pages list
+        String tmp = page.title();
+
         List<Page> pages = context.pages();
         windowHandles.entrySet().removeIf(entry -> !pages.contains(entry.getValue()));
         pages.forEach(p -> {
@@ -247,7 +262,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
                     }
                 }
         );
-        return new HashSet<>(windowHandles.keySet());
+        return new LinkedHashSet<>(windowHandles.keySet());
     }
 
     /**
@@ -283,8 +298,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      */
     @Override
     public Navigation navigate() {
-        // return new PlaywrightNavigation();
-        throw new UnsupportedOperationException("Navigation is not yet implemented in PlaywrightWebDriver.");
+        return new PlaywrightNavigation();
     }
 
     /**
@@ -418,7 +432,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
          */
         @Override
         public WebDriver frame(WebElement frameElement) {
-            if (frameElement instanceof PlaywrightWebElement) {
+            if (PlaywrightWebElement.instanceOf(frameElement)) {
                 PlaywrightWebElement element = (PlaywrightWebElement) frameElement;
                 return setFrame(element.locator().elementHandle().contentFrame());
             }
@@ -446,11 +460,11 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         public WebDriver window(String nameOrHandle) {
             if (windowHandles.containsKey(nameOrHandle)) {
                 page = windowHandles.get(nameOrHandle);
+                page.bringToFront();
                 frame = page.mainFrame();
-            } else {
-                throw new WebDriverException("No window found with handle: " + nameOrHandle);
+                return PlaywrightWebDriver.this;
             }
-            return PlaywrightWebDriver.this;
+            throw new WebDriverException("No window found with handle: " + nameOrHandle);
         }
 
         /**
@@ -494,10 +508,39 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
          */
         @Override
         public WebElement activeElement() {
-            // Get the currently focused element
-            String script = "return document.activeElement";
             return new PlaywrightWebElement(PlaywrightWebDriver.this,
                     page.locator("*:focus"));
+        }
+    }
+
+    /**
+     * Implementation of WebDriver.Navigation for Playwright.
+     * This class handles browser navigation functionality.
+     */
+    private class PlaywrightNavigation implements Navigation {
+        @Override
+        public void back() {
+            page.goBack();
+        }
+
+        @Override
+        public void forward() {
+            page.goForward();
+        }
+
+        @Override
+        public void to(String url) {
+            page.navigate(url);
+        }
+
+        @Override
+        public void to(URL url) {
+            page.navigate(url.toString());
+        }
+
+        @Override
+        public void refresh() {
+            page.reload();
         }
     }
 }
