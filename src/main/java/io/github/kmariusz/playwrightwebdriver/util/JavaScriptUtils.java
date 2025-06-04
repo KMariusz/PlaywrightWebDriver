@@ -5,6 +5,7 @@ import com.microsoft.playwright.Page;
 import io.github.kmariusz.playwrightwebdriver.PlaywrightWebElement;
 import lombok.experimental.UtilityClass;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,20 +31,25 @@ public class JavaScriptUtils {
      * the script is executed in the context of that node. Otherwise, all arguments are passed as an array.
      * </p>
      *
-     * @param page   the Playwright Page to execute the script in
-     * @param script the JavaScript code to execute
-     * @param args   arguments to pass to the script; may include PlaywrightWebElement or WrapsElement
+     * @param page          the Playwright Page to execute the script in
+     * @param script        the JavaScript code to execute
+     * @param scriptTimeout the timeout for the script execution
+     * @param args          arguments to pass to the script; may include PlaywrightWebElement or WrapsElement
      * @return the result of the script execution
      */
-    public static Object executeScript(Page page, String script, Object... args) {
+    public static Object executeScript(Page page, String script, Duration scriptTimeout, Object... args) {
+        Locator dummyLocator = page.locator("body");
+        Locator.EvaluateOptions options = new Locator.EvaluateOptions()
+                .setTimeout(scriptTimeout.toMillis());
+
         if (args == null || args.length == 0) {
-            return page.evaluate("() => {" + script + "}");
+            return dummyLocator.evaluate("() => {" + script + "}", null, options);
         }
 
         Map<Integer, PlaywrightWebElement> playwrightWebElements = getPlaywrightWebElements(args);
         if (playwrightWebElements.isEmpty()) {
             script = "(arguments) => {" + script + "}";
-            return page.evaluate(script, args);
+            return dummyLocator.evaluate(script, args, options);
         }
 
         Object[] newArgs = replacePlaywrightWebElements(args, playwrightWebElements);
@@ -53,7 +59,8 @@ public class JavaScriptUtils {
             PlaywrightWebElement element = playwrightWebElements.get(index);
             Locator locator = element.locator();
             script = "(node, arguments) => {" + script.replace("arguments[" + index + "]", "node") + "}";
-            return locator.evaluate(script, newArgs);
+            return locator
+                    .evaluate(script, newArgs, options);
         }
 
         script = "(arguments) => {" + script + "}";
@@ -63,17 +70,18 @@ public class JavaScriptUtils {
     /**
      * Executes JavaScript code in the context of the given Playwright Page.
      * <p>
-     * This method is an alias for {@link #executeScript(Page, String, Object...)} and does not provide asynchronous execution.
+     * This method is an alias for {@link #executeScript(Page, String, Duration, Object...)} and does not provide asynchronous execution.
      * All script execution is synchronous.
      * </p>
      *
-     * @param page   the Playwright Page to execute the script in
-     * @param script the JavaScript code to execute (synchronously)
-     * @param args   arguments to pass to the script
+     * @param page          the Playwright Page to execute the script in
+     * @param script        the JavaScript code to execute (synchronously)
+     * @param scriptTimeout the timeout for the script execution
+     * @param args          arguments to pass to the script
      * @return the result of the script execution
      */
-    public static Object executeAsyncScript(Page page, String script, Object... args) {
-        return executeScript(page, script, args);
+    public static Object executeAsyncScript(Page page, String script, Duration scriptTimeout, Object... args) {
+        return executeScript(page, script, scriptTimeout, args);
     }
 
     /**

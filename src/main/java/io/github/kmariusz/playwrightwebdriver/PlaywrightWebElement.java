@@ -1,12 +1,13 @@
 package io.github.kmariusz.playwrightwebdriver;
 
 import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.TimeoutError;
 import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.Rectangle;
@@ -31,7 +32,6 @@ import java.util.stream.Collectors;
  * allowing Playwright to be used with existing Selenium-based test frameworks.
  */
 @Getter
-@RequiredArgsConstructor
 @Accessors(fluent = true)
 public class PlaywrightWebElement extends RemoteWebElement implements WebElement, Locatable, TakesScreenshot, WrapsDriver {
     /**
@@ -48,6 +48,17 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
      * Unique identifier for this element
      */
     private final String playwrightElementId = UUID.randomUUID().toString();
+
+    public PlaywrightWebElement(PlaywrightWebDriver playwrightWebDriver, Locator locator) {
+        this.driver = playwrightWebDriver;
+        this.locator = locator;
+
+        try {
+            locator.getAttribute("class");
+        } catch (TimeoutError e) {
+            throw new NoSuchElementException("Locator does not match any elements: " + locator);
+        }
+    }
 
     /**
      * Checks if the argument is a PlaywrightWebElement or wraps one.

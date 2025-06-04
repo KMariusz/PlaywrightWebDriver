@@ -4,6 +4,7 @@ import com.google.common.net.InternetDomainName;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.ConsoleMessage;
+import com.microsoft.playwright.Dialog;
 import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
@@ -31,6 +32,7 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -90,6 +92,8 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      * This helps track which frame should be used for element finding and other operations.
      */
     private Frame frame;
+
+    private Duration scriptTimeout = Duration.ofSeconds(30);
 
     /**
      * Creates a new PlaywrightWebDriver instance with default options.
@@ -196,8 +200,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         Level level = Level.INFO;
         try {
             level = Level.parse(consoleMessage.type().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            System.err.println("Playwright console message type: " + consoleMessage.type() + " mapped to INFO level.");
+        } catch (IllegalArgumentException ignored) {
         }
         return new LogEntry(level, System.currentTimeMillis(), consoleMessage.text());
     }
@@ -400,7 +403,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      */
     @Override
     public Object executeScript(String script, Object... args) {
-        return JavaScriptUtils.executeScript(page, script, args);
+        return JavaScriptUtils.executeScript(page, script, scriptTimeout, args);
     }
 
     /**
@@ -413,7 +416,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      */
     @Override
     public Object executeAsyncScript(String script, Object... args) {
-        return JavaScriptUtils.executeAsyncScript(page, script, args);
+        return JavaScriptUtils.executeAsyncScript(page, script, scriptTimeout, args);
     }
 
     /**
@@ -571,8 +574,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
          */
         @Override
         public Alert alert() {
-            //return new PlaywrightAlert();
-            throw new UnsupportedOperationException("Alert handling is not yet implemented in PlaywrightWebDriver.");
+            return new PlaywrightAlert();
         }
 
         /**
@@ -595,26 +597,33 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         @Override
         public void back() {
             page.goBack();
+            page.waitForLoadState();
         }
 
         @Override
         public void forward() {
             page.goForward();
+            page.waitForLoadState();
         }
 
         @Override
         public void to(String url) {
             page.navigate(url);
+            page.waitForLoadState();
+            page.waitForURL(url);
         }
 
         @Override
         public void to(URL url) {
             page.navigate(url.toString());
+            page.waitForLoadState();
+            page.waitForURL(url.toString());
         }
 
         @Override
         public void refresh() {
             page.reload();
+            page.waitForLoadState();
         }
     }
 
@@ -701,8 +710,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
 
         @Override
         public Timeouts timeouts() {
-            //return new PlaywrightTimeouts();
-            throw new UnsupportedOperationException("Timeouts functionality is not implemented");
+            return new PlaywrightTimeouts();
         }
 
         /**
@@ -841,6 +849,70 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
                     .map(LogEntry::getLevel)
                     .map(Level::toString)
                     .collect(Collectors.toSet());
+        }
+    }
+
+    /**
+     * Implementation of WebDriver.Timeouts for Playwright.
+     */
+    private class PlaywrightTimeouts implements Timeouts {
+        @Override
+        public Timeouts implicitlyWait(Duration duration) {
+            context.setDefaultTimeout(duration.toMillis());
+            for (Page p : context.pages()) {
+                p.setDefaultTimeout(duration.toMillis());
+            }
+            return this;
+        }
+
+        @Override
+        public Timeouts pageLoadTimeout(Duration duration) {
+            context.setDefaultNavigationTimeout(duration.toMillis());
+            for (Page p : context.pages()) {
+                p.setDefaultNavigationTimeout(duration.toMillis());
+            }
+            return this;
+        }
+
+        @Override
+        public Timeouts scriptTimeout(Duration duration) {
+            scriptTimeout = duration;
+            return this;
+        }
+    }
+
+    /**
+     * Implementation of WebDriver.Alert for Playwright.
+     */
+    private class PlaywrightAlert implements Alert {
+        @Override
+        public void dismiss() {
+            page.onDialog(Dialog::dismiss);
+            // Trigger any pending dialogs
+            page.evaluate("() => {}");
+        }
+
+        @Override
+        public void accept() {
+            page.onDialog(Dialog::accept);
+            // Trigger any pending dialogs
+            page.evaluate("() => {}");
+        }
+
+        @Override
+        public String getText() {
+            final String[] message = {""};
+            page.onDialog(dialog -> message[0] = dialog.message());
+            // Trigger any pending dialogs
+            page.evaluate("() => {}");
+            return message[0];
+        }
+
+        @Override
+        public void sendKeys(String keysToSend) {
+            page.onDialog(dialog -> dialog.accept(keysToSend));
+            // Trigger any pending dialogs
+            page.evaluate("() => {}");
         }
     }
 }
