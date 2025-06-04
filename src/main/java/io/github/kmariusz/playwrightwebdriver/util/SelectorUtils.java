@@ -5,22 +5,11 @@ import org.openqa.selenium.By;
 
 /**
  * Utility class for converting Selenium By selectors to Playwright selector strings.
- * <p>
- * This class provides functionality to transform Selenium's By locators into equivalent
- * Playwright selector strings, enabling interoperability between Selenium-based test code
- * and Playwright-based implementations. This is particularly useful when migrating from
- * Selenium to Playwright or when creating adapter layers between the two frameworks.
- * </p>
  */
 @UtilityClass
 public class SelectorUtils {
     /**
      * Converts a Selenium By selector to a Playwright selector string.
-     * <p>
-     * This method takes a Selenium By selector and converts it into a Playwright-compatible
-     * selector string. It supports various types of selectors including id, class, CSS,
-     * XPath, link text, partial link text, name, and tag name.
-     * </p>
      *
      * @param by The Selenium By selector to convert
      * @return The corresponding Playwright selector string
@@ -32,8 +21,6 @@ public class SelectorUtils {
         }
 
         String byString = by.toString();
-
-        // Check for known selector types
         try {
             if (byString.startsWith("By.id: ")) {
                 String id = byString.substring(7);
@@ -63,7 +50,6 @@ public class SelectorUtils {
             throw new IllegalArgumentException("Error processing selector: " + byString, e);
         }
 
-        // Handle unsupported selector types outside the try-catch block
         throw new IllegalArgumentException("Unsupported By selector type: " + byString);
     }
 
@@ -79,7 +65,6 @@ public class SelectorUtils {
      * @return The escaped selector string
      */
     private static String escapeCssSelector(String selector) {
-        // Escape special CSS selector characters
         return selector.replaceAll("([\\[\\]^$*.|?+{}=!<>:()\\-])", "\\\\$1");
     }
 
@@ -94,7 +79,6 @@ public class SelectorUtils {
      * @return The escaped text string
      */
     private static String escapeTextSelector(String text) {
-        // Escape single quotes in text selectors by doubling them
         return text.replace("'", "''");
     }
 
@@ -109,7 +93,6 @@ public class SelectorUtils {
      * @return The escaped attribute value
      */
     private static String escapeAttributeValue(String value) {
-        // Escape single quotes in attribute values by doubling them
         return value.replace("'", "''");
     }
 }

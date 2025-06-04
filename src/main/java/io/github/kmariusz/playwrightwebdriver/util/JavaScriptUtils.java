@@ -11,25 +11,13 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * Utility class for executing JavaScript code in the context of Playwright's Page or Locator.
- * <p>
- * This class provides static methods to evaluate JavaScript code, handling the conversion of Selenium WebElement
- * arguments (specifically {@link io.github.kmariusz.playwrightwebdriver.PlaywrightWebElement}) to Playwright node handles.
- * <br>
- * <b>Note:</b> All script execution is synchronous. There is no true asynchronous execution; the {@code executeAsyncScript}
- * method is an alias for {@code executeScript} and does not provide asynchronous behavior.
- * </p>
+ * Utility class for executing JavaScript code.
  */
 @UtilityClass
 public class JavaScriptUtils {
 
     /**
      * Executes JavaScript code in the context of the given Playwright Page.
-     * <p>
-     * If any argument is a {@link io.github.kmariusz.playwrightwebdriver.PlaywrightWebElement} (or wraps one),
-     * it is converted to a Playwright node handle and passed to the script. If only one such element is present,
-     * the script is executed in the context of that node. Otherwise, all arguments are passed as an array.
-     * </p>
      *
      * @param page          the Playwright Page to execute the script in
      * @param script        the JavaScript code to execute
@@ -42,18 +30,12 @@ public class JavaScriptUtils {
         Locator.EvaluateOptions options = new Locator.EvaluateOptions()
                 .setTimeout(scriptTimeout.toMillis());
 
-        if (args == null || args.length == 0) {
-            return dummyLocator.evaluate("() => {" + script + "}", null, options);
-        }
-
         Map<Integer, PlaywrightWebElement> playwrightWebElements = getPlaywrightWebElements(args);
         if (playwrightWebElements.isEmpty()) {
-            script = "(arguments) => {" + script + "}";
-            return dummyLocator.evaluate(script, args, options);
+            return dummyLocator.evaluate("(arguments) => {" + script + "}", args, options);
         }
 
         Object[] newArgs = replacePlaywrightWebElements(args, playwrightWebElements);
-
         if (playwrightWebElements.size() == 1) {
             int index = playwrightWebElements.keySet().iterator().next();
             PlaywrightWebElement element = playwrightWebElements.get(index);
@@ -91,6 +73,9 @@ public class JavaScriptUtils {
      * @return a map of argument indices to PlaywrightWebElement instances
      */
     private static Map<Integer, PlaywrightWebElement> getPlaywrightWebElements(Object[] args) {
+        if (args == null || args.length == 0) {
+            return Map.of();
+        }
         return IntStream.range(0, args.length)
                 .filter(i -> PlaywrightWebElement.instanceOf(args[i]))
                 .boxed()

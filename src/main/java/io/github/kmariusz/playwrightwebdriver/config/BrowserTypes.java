@@ -2,10 +2,6 @@ package io.github.kmariusz.playwrightwebdriver.config;
 
 /**
  * Enum representing different browser types supported by Playwright.
- * <p>
- * This enum provides constants for the three browser engines that Playwright supports:
- * Chromium (Chrome/Edge), Firefox, and WebKit (Safari).
- * </p>
  */
 public enum BrowserTypes {
     /**

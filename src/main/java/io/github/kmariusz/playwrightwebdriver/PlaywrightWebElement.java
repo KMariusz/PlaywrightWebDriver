@@ -28,8 +28,6 @@ import java.util.stream.Collectors;
 
 /**
  * Implementation of Selenium's WebElement interface using Playwright.
- * This class bridges Selenium's WebDriver API with Playwright's automation capabilities,
- * allowing Playwright to be used with existing Selenium-based test frameworks.
  */
 @Getter
 @Accessors(fluent = true)
@@ -47,13 +45,16 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
     /**
      * Unique identifier for this element
      */
-    private final String playwrightElementId = UUID.randomUUID().toString();
+    private final String id;
 
     public PlaywrightWebElement(PlaywrightWebDriver playwrightWebDriver, Locator locator) {
         this.driver = playwrightWebDriver;
         this.locator = locator;
+        this.id = UUID.randomUUID().toString();
 
         try {
+            // Getting the class attribute to trigger locator existence check
+            // This will throw a TimeoutError if the element is not found within the default timeout
             locator.getAttribute("class");
         } catch (TimeoutError e) {
             throw new NoSuchElementException("Locator does not match any elements: " + locator);
@@ -74,11 +75,6 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
 
     /**
      * Extracts a PlaywrightWebElement from the given object.
-     * <p>
-     * This method unwraps any WrapsElement implementations to access the underlying
-     * PlaywrightWebElement. This is useful when working with decorated WebElements
-     * or elements wrapped by frameworks or test tools.
-     * </p>
      *
      * @param arg the object that is or wraps a PlaywrightWebElement
      * @return the PlaywrightWebElement extracted from the argument
@@ -103,7 +99,7 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
      */
     @Override
     public String getId() {
-        return playwrightElementId;
+        return id;
     }
 
     /**
@@ -126,17 +122,20 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
 
     /**
      * Simulates typing into the element.
-     * This method will first clear any existing content before typing the new text.
      *
      * @param keysToSend Character sequence(s) to send to the element
      */
     @Override
     public void sendKeys(CharSequence... keysToSend) {
-        StringBuilder textToType = new StringBuilder();
-        for (CharSequence keys : keysToSend) {
-            textToType.append(keys);
+        if (keysToSend == null || keysToSend.length == 0) {
+            throw new IllegalArgumentException("Keys to send should be a not null CharSequence");
         }
-        locator.fill(textToType.toString());
+        for (CharSequence cs : keysToSend) {
+            if (cs == null) {
+                throw new IllegalArgumentException("Keys to send should be a not null CharSequence");
+            }
+        }
+        locator.fill(String.join("", keysToSend));
     }
 
     /**
@@ -144,7 +143,7 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
      */
     @Override
     public void clear() {
-        locator.fill("");
+        locator.clear();
     }
 
     /**
@@ -185,7 +184,7 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
      */
     @Override
     public boolean isEnabled() {
-        return !locator.isDisabled();
+        return locator.isEnabled();
     }
 
     /**
@@ -199,9 +198,9 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
     }
 
     /**
-     * Finds all elements within the current context using the given mechanism.
+     * Finds all elements for the given selector within this element's context.
      *
-     * @param by The locating mechanism to use
+     * @param by The Selenium By selector
      * @return A list of all WebElements found, or an empty list if nothing matches
      */
     @Override
@@ -215,9 +214,9 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
     }
 
     /**
-     * Finds the first element within the current context using the given mechanism.
+     * Finds the first element for the given selector within this element's context.
      *
-     * @param by The locating mechanism to use
+     * @param by The Selenium By selector
      * @return The first matching element
      */
     @Override
@@ -227,10 +226,8 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
     }
 
     /**
-     * Returns the shadow DOM root of this element if the element has an open shadow root.
-     * This allows querying elements in the shadow DOM of this element.
-     *
-     * @return A SearchContext representing the shadow root that can be used to find elements within the shadow DOM
+     * Returns current element as a SearchContext.
+     * This method is used to support shadow DOM elements.
      */
     @Override
     public SearchContext getShadowRoot() {
@@ -254,11 +251,8 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
      */
     @Override
     public Point getLocation() {
-        var rect = locator.boundingBox();
-        if (rect == null) {
-            return new Point(0, 0);
-        }
-        return new Point((int) rect.x, (int) rect.y);
+        var rect = getRect();
+        return new Point(rect.x, rect.y);
     }
 
     /**
@@ -268,11 +262,8 @@ public class PlaywrightWebElement extends RemoteWebElement implements WebElement
      */
     @Override
     public Dimension getSize() {
-        var rect = locator.boundingBox();
-        if (rect == null) {
-            return new Dimension(0, 0);
-        }
-        return new Dimension((int) rect.width, (int) rect.height);
+        var rect = getRect();
+        return new Dimension(rect.width, rect.height);
     }
 
     /**

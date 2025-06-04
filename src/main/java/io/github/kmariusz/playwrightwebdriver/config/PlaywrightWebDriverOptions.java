@@ -11,9 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 /**
- * Configuration options for Playwright WebDriver.
- * This class provides a way to configure browser behavior and properties
- * such as browser type, headless mode, window dimensions, and other settings.
+ * Configuration options for PlaywrightWebDriver.
  */
 @Data
 @Builder
@@ -21,7 +19,6 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Accessors(chain = true)
 public class PlaywrightWebDriverOptions {
-
     /**
      * Options for creating a Playwright instance.
      * These options can control environment variables and other Playwright initialization parameters.
