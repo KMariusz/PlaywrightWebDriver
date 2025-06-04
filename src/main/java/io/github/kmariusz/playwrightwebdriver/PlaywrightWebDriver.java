@@ -11,6 +11,7 @@ import com.microsoft.playwright.Playwright;
 import io.github.kmariusz.playwrightwebdriver.config.PlaywrightWebDriverOptions;
 import io.github.kmariusz.playwrightwebdriver.util.JavaScriptUtils;
 import io.github.kmariusz.playwrightwebdriver.util.SelectorUtils;
+import lombok.Getter;
 import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Cookie;
@@ -55,23 +56,26 @@ import java.util.stream.Collectors;
  * suites to leverage Playwright's performance and reliability advantages with minimal code changes.
  * <p>
  * Note that some advanced Playwright features may not be directly accessible through the standard
- * WebDriver interfaces. For these cases, use the {@link #getPlaywrightPage()} and
- * {@link #getPlaywrightContext()} methods to access the native Playwright objects.
+ * WebDriver interfaces. For these cases, use getter methods to access the native Playwright objects like Playwright,
+ * Browser, and Page directly.
  */
 public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
     /**
      * The Playwright instance used for browser automation.
      */
+    @Getter
     private final Playwright playwright;
 
     /**
      * The Browser instance representing the automated browser.
      */
+    @Getter
     private final Browser browser;
 
     /**
      * The BrowserContext instance representing an isolated browser session.
      */
+    @Getter
     private final BrowserContext context;
 
     /**
@@ -80,19 +84,29 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      */
     private final Map<String, Page> windowHandles = new LinkedHashMap<>();
 
+    /**
+     * A map to store console messages from all pages.
+     * This is used to capture and retrieve console logs through the Selenium logging API.
+     */
     private final Map<String, List<LogEntry>> consoleMessages = new LinkedHashMap<>();
 
     /**
      * The Page instance representing a single tab or window within the browser.
      */
+    @Getter
     private Page page;
 
     /**
      * The current frame in focus for WebDriver operations.
      * This helps track which frame should be used for element finding and other operations.
      */
+    @Getter
     private Frame frame;
 
+    /**
+     * The timeout duration for script execution.
+     * This is used to limit how long scripts can run before being forcibly terminated.
+     */
     private Duration scriptTimeout = Duration.ofSeconds(30);
 
     /**
@@ -107,7 +121,6 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      *
      * @param options the configuration options for this WebDriver instance, or null for default options
      * @throws IllegalArgumentException if an unsupported browser type is specified in the options
-     * @throws RuntimeException         if there's a failure initializing Playwright components
      */
     public PlaywrightWebDriver(PlaywrightWebDriverOptions options) {
         if (options == null) {
@@ -179,7 +192,6 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
             if (!this.consoleMessages.containsKey(handle)) {
                 Page page = entry.getValue();
                 page.onConsoleMessage(consoleMessage -> {
-                    // Store console messages in a map with a unique identifier
                     List<LogEntry> consoleMessages = this.consoleMessages.getOrDefault(handle, new ArrayList<>());
                     consoleMessages.add(mapConsoleMessage(consoleMessage));
                     this.consoleMessages.put(handle, consoleMessages);
@@ -236,11 +248,10 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
     }
 
     /**
-     * Finds all elements within the current page that match the given search criteria.
-     * The search criteria are converted to Playwright-compatible selectors.
+     * Finds all elements within the current frame that match the given selector.
      *
-     * @param by the locating mechanism to use
-     * @return a list of WebElements matching the search criteria
+     * @param by The Selenium By selector
+     * @return a list of WebElements matching the given selector
      */
     @Override
     public List<WebElement> findElements(By by) {
@@ -253,11 +264,10 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
     }
 
     /**
-     * Finds the first element within the current page that matches the given search criteria.
-     * The search criteria are converted to Playwright-compatible selectors.
+     * Finds the first element within the current frame that matches the given selector.
      *
-     * @param by the locating mechanism to use
-     * @return the first WebElement matching the search criteria
+     * @param by The Selenium By selector
+     * @return the first WebElement matching the given selector
      * @throws org.openqa.selenium.NoSuchElementException if no matching elements are found
      */
     @Override
@@ -281,18 +291,14 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      */
     @Override
     public void close() {
-        // Close the current page and remove it from the window handles
         if (page != null) {
             String handle = getWindowHandle();
             page.close();
             windowHandles.remove(handle);
-            // If no pages left, quit the browser
             if (windowHandles.isEmpty()) {
                 quit();
             } else {
-                // Switch to another page if available
-                page = context.pages().get(0);
-                setFrame(page.mainFrame());
+                setPage(context.pages().get(0));
             }
         }
     }
@@ -324,7 +330,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      */
     private void updateWindowHandles() {
         // Interact with Playwright to refresh pages list
-        page.title(); // This call ensures the page is interacted with to refresh the pages list
+        page.title();
         List<Page> pages = context.pages();
         windowHandles.entrySet().removeIf(entry -> !pages.contains(entry.getValue()));
         pages.forEach(p -> {
@@ -407,12 +413,11 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
     }
 
     /**
-     * Executes asynchronous JavaScript code in the context of the current page.
-     * The script is wrapped in a Promise-based function to handle async execution.
+     * Executes JavaScript code in the context of the current page.
      *
-     * @param script the JavaScript code to execute asynchronously
+     * @param script the JavaScript code to execute
      * @param args   the arguments to pass to the script
-     * @return the value returned by the script when the Promise resolves
+     * @return the value returned by the script, or null if the script returns undefined
      */
     @Override
     public Object executeAsyncScript(String script, Object... args) {
@@ -435,27 +440,7 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
     }
 
     /**
-     * Gets the Playwright Page instance used by this driver.
-     * This provides direct access to Playwright-specific functionality not available through the WebDriver interface.
-     *
-     * @return the Playwright Page instance
-     */
-    public Page getPlaywrightPage() {
-        return page;
-    }
-
-    /**
-     * Gets the Playwright BrowserContext instance used by this driver.
-     * This provides direct access to context-level Playwright functionality such as cookies, permissions, and network control.
-     *
-     * @return the Playwright BrowserContext instance
-     */
-    public BrowserContext getPlaywrightContext() {
-        return context;
-    }
-
-    /**
-     * Returns an empty {@link Optional} for BiDi, as PlaywrightWebDriver does not yet support the WebDriver BiDi protocol.
+     * Returns an empty {@link Optional} for BiDi, as Playwright does not yet support the WebDriver BiDi protocol.
      *
      * @return an empty {@link Optional} for BiDi
      */
@@ -594,18 +579,34 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      * This class handles browser navigation functionality.
      */
     private class PlaywrightNavigation implements Navigation {
+        /**
+         * Navigates back in the browser history.
+         * This method simulates clicking the browser's back button.
+         * Waits for the page to finish loading after navigation.
+         */
         @Override
         public void back() {
             page.goBack();
             page.waitForLoadState();
         }
 
+        /**
+         * Navigates forward in the browser history.
+         * This method simulates clicking the browser's forward button.
+         * Waits for the page to finish loading after navigation.
+         */
         @Override
         public void forward() {
             page.goForward();
             page.waitForLoadState();
         }
 
+        /**
+         * Navigates to the specified URL as a string.
+         * Waits for the page to finish loading and for the URL to match the target.
+         *
+         * @param url the URL to navigate to
+         */
         @Override
         public void to(String url) {
             page.navigate(url);
@@ -613,6 +614,12 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
             page.waitForURL(url);
         }
 
+        /**
+         * Navigates to the specified URL as a {@link URL} object.
+         * Waits for the page to finish loading and for the URL to match the target.
+         *
+         * @param url the URL to navigate to
+         */
         @Override
         public void to(URL url) {
             page.navigate(url.toString());
@@ -620,6 +627,10 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
             page.waitForURL(url.toString());
         }
 
+        /**
+         * Reloads the current page.
+         * Waits for the page to finish loading after reload.
+         */
         @Override
         public void refresh() {
             page.reload();
@@ -632,6 +643,11 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      * This class handles browser-level options like cookies, timeouts, and window management.
      */
     private class PlaywrightOptions implements Options {
+        /**
+         * Adds a cookie to the current browser context.
+         *
+         * @param cookie the Selenium {@link Cookie} to add
+         */
         @Override
         public void addCookie(Cookie cookie) {
             com.microsoft.playwright.options.Cookie playwrightCookie =
@@ -661,6 +677,11 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
             context.addCookies(List.of(playwrightCookie));
         }
 
+        /**
+         * Deletes a cookie by its name.
+         *
+         * @param name the name of the cookie to delete
+         */
         @Override
         public void deleteCookieNamed(String name) {
             context.clearCookies(
@@ -668,16 +689,29 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
             );
         }
 
+        /**
+         * Deletes the specified cookie.
+         *
+         * @param cookie the Selenium {@link Cookie} to delete
+         */
         @Override
         public void deleteCookie(Cookie cookie) {
             deleteCookieNamed(cookie.getName());
         }
 
+        /**
+         * Deletes all cookies in the current browser context.
+         */
         @Override
         public void deleteAllCookies() {
             context.clearCookies();
         }
 
+        /**
+         * Retrieves all cookies from the current browser context.
+         *
+         * @return a set of Selenium {@link Cookie} objects
+         */
         @Override
         public Set<Cookie> getCookies() {
             List<com.microsoft.playwright.options.Cookie> playwrightCookies = context.cookies();
@@ -700,6 +734,12 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
             return seleniumCookies;
         }
 
+        /**
+         * Retrieves a cookie by its name.
+         *
+         * @param name the name of the cookie to retrieve
+         * @return the Selenium {@link Cookie} with the specified name, or null if not found
+         */
         @Override
         public Cookie getCookieNamed(String name) {
             return getCookies().stream()
@@ -708,6 +748,11 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
                     .orElse(null);
         }
 
+        /**
+         * Returns the {@link Timeouts} interface for managing timeouts.
+         *
+         * @return a new instance of {@link PlaywrightTimeouts}
+         */
         @Override
         public Timeouts timeouts() {
             return new PlaywrightTimeouts();
@@ -715,8 +760,6 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
 
         /**
          * Returns the options for managing the current window.
-         * <p>
-         * The window options allow for controlling window size and position.
          *
          * @return a {@link Window} object for controlling the browser window
          */
@@ -766,12 +809,24 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      * Implementation of WebDriver.Window for Playwright.
      */
     private class PlaywrightWindow implements Window {
+
+        /**
+         * Returns the size of the current browser window's viewport.
+         *
+         * @return a Dimension object containing the width and height of the viewport
+         */
         @Override
         public Dimension getSize() {
             com.microsoft.playwright.options.ViewportSize size = page.viewportSize();
             return new Dimension(size.width, size.height);
         }
 
+        /**
+         * Sets the size of the current browser window's viewport.
+         *
+         * @param targetSize the desired size of the viewport as a Dimension object
+         * @throws IllegalArgumentException if the width or height is not positive
+         */
         @Override
         public void setSize(Dimension targetSize) {
             if (targetSize.getWidth() <= 0 || targetSize.getHeight() <= 0) {
@@ -780,26 +835,63 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
             page.setViewportSize(targetSize.getWidth(), targetSize.getHeight());
         }
 
+        /**
+         * Returns the position of the current browser window.
+         * <p>
+         * Not supported in Playwright. This method will always throw an UnsupportedOperationException.
+         *
+         * @return never returns normally
+         * @throws UnsupportedOperationException always thrown, as getting window position is not supported
+         */
         @Override
         public Point getPosition() {
             throw new UnsupportedOperationException("Getting window position is not supported in Playwright.");
         }
 
+        /**
+         * Sets the position of the current browser window.
+         * <p>
+         * Not supported in Playwright. This method will always throw an UnsupportedOperationException.
+         *
+         * @param targetPosition the desired position of the window
+         * @throws UnsupportedOperationException always thrown, as setting window position is not supported
+         */
         @Override
         public void setPosition(Point targetPosition) {
             throw new UnsupportedOperationException("Setting window position is not supported in Playwright.");
         }
 
+        /**
+         * Maximizes the current browser window.
+         * <p>
+         * Not supported in Playwright. This method will always throw an UnsupportedOperationException.
+         *
+         * @throws UnsupportedOperationException always thrown, as maximizing window is not supported
+         */
         @Override
         public void maximize() {
             throw new UnsupportedOperationException("Maximizing window is not supported in Playwright.");
         }
 
+        /**
+         * Minimizes the current browser window.
+         * <p>
+         * Not supported in Playwright. This method will always throw an UnsupportedOperationException.
+         *
+         * @throws UnsupportedOperationException always thrown, as minimizing window is not supported
+         */
         @Override
         public void minimize() {
             throw new UnsupportedOperationException("Minimizing window is not supported in Playwright.");
         }
 
+        /**
+         * Sets the current browser window to fullscreen mode.
+         * <p>
+         * Not supported in Playwright. This method will always throw an UnsupportedOperationException.
+         *
+         * @throws UnsupportedOperationException always thrown, as fullscreen mode is not supported
+         */
         @Override
         public void fullscreen() {
             throw new UnsupportedOperationException("Fullscreen mode is not supported in Playwright.");
@@ -822,8 +914,6 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         }
 
         /**
-         * Gets all log entries for the specified log type.
-         * <p>
          * Currently, this implementation returns all console messages regardless of the
          * requested log type.
          *
@@ -836,8 +926,6 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
         }
 
         /**
-         * Gets the set of log types available from this driver.
-         * <p>
          * Returns a set of log levels from captured console messages, represented as strings.
          *
          * @return a set of available log types
@@ -856,6 +944,13 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      * Implementation of WebDriver.Timeouts for Playwright.
      */
     private class PlaywrightTimeouts implements Timeouts {
+        /**
+         * Sets the timeout for implicitly waiting for elements to appear.
+         * This timeout applies to all element searches performed by the driver.
+         *
+         * @param duration the timeout duration for implicit waits
+         * @return this Timeouts instance for method chaining
+         */
         @Override
         public Timeouts implicitlyWait(Duration duration) {
             context.setDefaultTimeout(duration.toMillis());
@@ -865,6 +960,13 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
             return this;
         }
 
+        /**
+         * Sets the timeout for page load operations.
+         * This timeout applies to navigation and loading of resources in the current page.
+         *
+         * @param duration the timeout duration for page load operations
+         * @return this Timeouts instance for method chaining
+         */
         @Override
         public Timeouts pageLoadTimeout(Duration duration) {
             context.setDefaultNavigationTimeout(duration.toMillis());
@@ -874,6 +976,13 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
             return this;
         }
 
+        /**
+         * Sets the script timeout for executing JavaScript in the current page.
+         * This timeout applies to all scripts executed via executeScript or executeAsyncScript.
+         *
+         * @param duration the timeout duration for script execution
+         * @return this Timeouts instance for method chaining
+         */
         @Override
         public Timeouts scriptTimeout(Duration duration) {
             scriptTimeout = duration;
@@ -885,34 +994,43 @@ public class PlaywrightWebDriver extends RemoteWebDriver implements HasBiDi {
      * Implementation of WebDriver.Alert for Playwright.
      */
     private class PlaywrightAlert implements Alert {
+        /**
+         * Dismisses the currently displayed dialog.
+         */
         @Override
         public void dismiss() {
+            // Dismisses the currently displayed dialog.
             page.onDialog(Dialog::dismiss);
-            // Trigger any pending dialogs
-            page.evaluate("() => {}");
         }
 
+        /**
+         * Accepts the currently displayed dialog.
+         */
         @Override
         public void accept() {
             page.onDialog(Dialog::accept);
-            // Trigger any pending dialogs
-            page.evaluate("() => {}");
         }
 
+        /**
+         * Retrieves the message text from the currently displayed dialog.
+         *
+         * @return the message text of the dialog
+         */
         @Override
         public String getText() {
-            final String[] message = {""};
-            page.onDialog(dialog -> message[0] = dialog.message());
-            // Trigger any pending dialogs
-            page.evaluate("() => {}");
-            return message[0];
+            List<String> messages = new ArrayList<>();
+            page.onDialog(dialog -> messages.add(dialog.message()));
+            return messages.get(0);
         }
 
+        /**
+         * Sends keys to the currently displayed prompt dialog.
+         *
+         * @param keysToSend the text to enter into the prompt dialog
+         */
         @Override
         public void sendKeys(String keysToSend) {
             page.onDialog(dialog -> dialog.accept(keysToSend));
-            // Trigger any pending dialogs
-            page.evaluate("() => {}");
         }
     }
 }
