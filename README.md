@@ -9,7 +9,7 @@ Playwright's powerful automation capabilities.
 
 ## Table of Contents
 - [Features](#features)
-- [Known Bugs](#known-bugs)
+- [Limitations](#limitations)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -31,14 +31,40 @@ It is not comparable to full project migration from Selenium to Playwright. It i
 - Screenshot support
 - Asynchronous JavaScript execution
 
-## Known Bugs
+## Limitations
+
+Selenium and Playwright differ in some aspects so much that it is not possible to support all possible use cases.<br>
+Some of such cases are listed below.
+
+### Alerts Handling
+
+Main difference in alerts handling between Selenium and Playwright is timing model. In Selenium, it is synchronous - interaction is done after alert appears.<br>
+In Playwright, it is asynchronous - handler is pre-registered before dialog appears.<br>
+It means that such cases will not work properly by simple WebDriver replacement.
+
+### Window Management
+
+In Selenium there are methods which allow to resize and move browser window, such as `driver.manage().window().maximize()` or `driver.manage().window().setPosition()`.<br>
+In Playwright, there is no such functionality. Browser window cannot be resized or moved on runtime.<br>
+This means that such methods will not work properly by simple WebDriver replacement.<br>
+Methods `setSize()` and `getSize()` are supported by PlaywrightWebDriver, but they will not change the browser window size, only the Playwright page viewport size.
+
+### Logs
+Playwright does not support browser logs in the same way as Selenium does.<br>
+In Selenium, you can retrieve different types of logs (browser, driver, performance) using `driver.manage().logs()`.<br>
+Playwright does not have a direct equivalent for this functionality.<br>
+PlaywrightWebDriver returns [ConsoleMessages](https://playwright.dev/java/docs/api/class-consolemessage) mapped as a list of `org.openqa.selenium.logging.LogEntry` objects, but it does not support other types of logs.<br>
 
 ### JavaScript Code Execution
 
 JavaScript code in Selenium executed using [JavascriptExecutor](https://www.selenium.dev/selenium/docs/api/java/org/openqa/selenium/JavascriptExecutor.html) behaves differently than in Playwright's [evaluation](https://playwright.dev/docs/evaluating).
 
-The current implementation may not work properly with all types of JavaScript execution.
-It has been tested on various examples. However, please report any [issues](https://github.com/KMariusz/PlaywrightWebDriver/issues) you encounter.
+The current implementation has been tested with various examples, but it may still not work correctly with some JavaScript scripts.<br>
+Please report any [issues](https://github.com/KMariusz/PlaywrightWebDriver/issues) you encounter.
+
+### WebDriver BiDi
+PlaywrightWebDriver does not support WebDriver BiDi protocol. It is a work in progress and will be implemented in the future.
+Current status can be tracked [here](https://github.com/microsoft/playwright/issues/32577)
 
 ### Issues
 
@@ -48,6 +74,7 @@ There may be reported [issues](https://github.com/KMariusz/PlaywrightWebDriver/i
 
 - Java 11 or higher
 - Playwright browsers installed (automatically handled by Playwright)
+- Compatible with Selenium WebDriver 4.x
 
 ## Installation
 
@@ -151,3 +178,7 @@ PlaywrightWebDriver driver = new PlaywrightWebDriver(options);
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For issues, feature requests, or questions, please [create an issue](https://github.com/KMariusz/PlaywrightWebDriver/issues) on GitHub.
