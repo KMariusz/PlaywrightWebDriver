@@ -15,6 +15,7 @@ Playwright's powerful automation capabilities.
 - [Usage](#usage)
 - [Configuration Options](#configuration-options)
 - [License](#license)
+- [Support](#support)
 
 ## Features
 
