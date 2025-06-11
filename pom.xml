@@ -4,7 +4,7 @@
 
     <groupId>io.github.kmariusz</groupId>
     <artifactId>playwrightwebdriver</artifactId>
-    <version>20250605</version>
+    <version>20250611</version>
     <packaging>jar</packaging>
     
     <name>PlaywrightWebDriver</name>
