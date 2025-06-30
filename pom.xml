@@ -44,7 +44,7 @@
         
         <!-- Dependency Versions -->
         <selenium.version>4.33.0</selenium.version>
-        <playwright.version>1.52.0</playwright.version>
+        <playwright.version>1.53.0</playwright.version>
         <lombok.version>1.18.38</lombok.version>
         
         <!-- Plugin Versions -->
