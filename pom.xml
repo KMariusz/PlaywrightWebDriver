@@ -43,7 +43,7 @@
         <maven.compiler.release>11</maven.compiler.release>
         
         <!-- Dependency Versions -->
-        <selenium.version>4.33.0</selenium.version>
+        <selenium.version>4.34.0</selenium.version>
         <playwright.version>1.53.0</playwright.version>
         <lombok.version>1.18.38</lombok.version>
         
