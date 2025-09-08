@@ -45,7 +45,7 @@
         <!-- Dependency Versions -->
         <selenium.version>4.35.0</selenium.version>
         <playwright.version>1.54.0</playwright.version>
-        <lombok.version>1.18.38</lombok.version>
+        <lombok.version>1.18.40</lombok.version>
         
         <!-- Plugin Versions -->
         <maven.compiler.plugin.version>3.14.0</maven.compiler.plugin.version>
